@@ -1,0 +1,17 @@
+//
+// Do any local configuration here
+//
+
+zone "{{ domain }}" {
+  type master;
+  file "/etc/bind/db.{{ domain }}";
+  allow-update { none; };
+  notify no;
+};
+
+zone "{{ network_|call:"reverse_pointer" }}" {
+  type master;
+  file "/etc/bind/db.{{ network_|call:"network" }}";
+  allow-update { none; };
+  notify no;
+};

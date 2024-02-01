@@ -1,0 +1,37 @@
+# Configuration file for dnsmasq.
+
+port=53
+#domain-needed
+#bogus-priv
+
+log-dhcp
+log-facility=/var/log/dnsmasq.log
+
+conf-file=/usr/share/dnsmasq-base/trust-anchors.conf
+dnssec
+
+cache-size=10000
+
+expand-hosts
+local=/{{ domain }}/
+domain={{ domain }}
+
+dhcp-range={{ network_|addr:dynamic.start }},{{ network_|addr:dynamic.end }},20h
+dhcp-option=option:router,{{ gateway }}
+dhcp-option=option:domain-name,{{ domain }}
+dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
+dhcp-option=option:dns-server,{{ dns|join:"," }}
+
+no-resolv
+server=8.8.8.8
+server=1.1.1.1
+
+auth-server=ns.{{ domain }}
+auth-zone={{ domain }},{{ network }}
+auth-soa={{ time|stringformat:"d" }},root.{{ domain }}
+mx-host={{ domain }},mail.{{ domain }},10
+address=/mail.{{ domain }}/{{ network_|addr:mail }}
+address=/ns.{{ domain }}/{{ network_|addr:ns }}
+
+{% for host in hosts %}{% if host.ip %}dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},168h
+{% endif %}{% endfor %}

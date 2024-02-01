@@ -1,0 +1,128 @@
+domain: 'x.wabb.it'
+gateway: '10.20.0.1'
+network: '10.20.0.0/16'
+ntp:
+  - 0.0.0.50
+dns:
+  - 10.20.0.50
+  - 10.20.0.1
+ns: 0.0.0.50
+mail: 0.0.0.50
+dynamic:
+  start: '0.0.100.0'
+  end: '0.0.101.255'
+  format: 'goomba-{}'
+hosts:
+  -
+    hardware: '00:00:00:00:00:01'
+    ip: '0.0.0.50'
+    hostname: 'wario'
+    aliases:
+      - 'ntp'
+      - 'time'
+      - 'pihole'
+      - 'smtp'
+      - 'unifi'
+      - 'www'
+      - 'smtp'
+      - 'mail'
+    description: 'SuperMicro server mounted in the rack.'
+  -
+    hardware: '00:00:00:00:00:02'
+    ip: '0.0.0.90'
+    hostname: 'old-blooper'
+  -
+    hardware: '00:00:00:00:00:03'
+    ip: '0.0.0.95'
+    hostname: 'blooper'
+    aliases:
+      - 'printer'
+      - 'brother'
+    description: "This is the HP Printer in my office."
+  -
+    hardware: '00:00:00:00:00:04'
+    ip: '0.0.0.1'
+    hostname: 'chain-chomp'
+    aliases:
+      - 'router'
+      - 'gateway'
+  -
+    hardware: '00:00:00:00:00:05'
+    ip: '0.0.0.2'
+    hostname: 'bullet-bill'
+  -
+    hardware: '00:00:00:00:00:06'
+    ip: '0.0.0.5'
+    hostname: 'petey-piranha'
+    aliases:
+      - 'es48-500w'
+      - 'switch'
+    description: 'Ubiquiti ES-48-500W network Switch.'
+  -
+    hardware: '00:00:00:00:00:07'
+    ip: '0.0.0.10'
+    hostname: 'nanohd-lower'
+    aliases:
+      - 'ap-lower'
+    description: 'Unifi AP on Lower level (Hallway).'
+  -
+    hardware: '00:00:00:00:00:08'
+    ip: '0.0.0.11'
+    hostname: 'nanohd-main'
+    aliases:
+      - 'ap-main'
+    description: 'Unifi AP on Main level (Great room).'
+  -
+    hardware: '00:00:00:00:00:09'
+    ip: '0.0.0.12'
+    hostname: 'nanohd-upper'
+    aliases:
+      - 'ap-upper'
+    description: 'Unifi AP on Upper level (Hallway).'
+  -
+    hardware: '00:00:00:00:00:0a'
+    ip: '0.0.0.13'
+    hostname: 'acpro-deck'
+    aliases:
+      - 'ap-deck'
+    description: 'Unifi AP on Main level (Deck).'
+  -
+    hardware: '00:00:00:00:00:0b'
+    ip: '0.0.0.20'
+    hostname: 'boo'
+    description: 'Raspberry Pi that watches network traffic.'
+  -
+    hardware: '00:00:00:00:00:0c'
+    ip: '0.0.0.55'
+    hostname: 'wiggler'
+    description: 'Network storage server running TrueNAS.'
+  -
+    hardware: '00:00:00:00:00:0d'
+    ip: '0.0.0.56'
+    hostname: 'wiggler-plex'
+  -
+    hardware: '00:00:00:00:00:0e'
+    ip: '0.0.0.45'
+    hostname: 'waluigi'
+    aliases:
+      - 'alex'
+    description: "Alex's windows desktop."
+  -
+    hardware: '00:00:00:00:00:0f'
+    ip: '0.0.0.46'
+    hostname: 'waluigi-wifi'
+  -
+    hardware: '00:00:00:00:00:10'
+    ip: '0.0.0.40'
+    hostname: 'toadette'
+    aliases:
+      - 'tina'
+    description: "Tina's windows desktop."
+  -
+    hardware: '00:00:00:00:00:11'
+    ip: '0.0.0.41'
+    hostname: 'toadette-wifi'
+  -
+    hardware: '00:00:00:00:00:12'
+    ip: '0.0.10.1'
+    hostname: 'camera-0'

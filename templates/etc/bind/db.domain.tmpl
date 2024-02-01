@@ -1,0 +1,17 @@
+$TTL 1W
+@                IN SOA        ns.{{ domain }}. root.{{ domain }}. (
+                               {{ time|stringformat:"12d" }} ; Serial
+                                         3H ; Refresh
+                                        15M ; Retry
+                                         1W ; Expire
+                                         1D ; Negative Cache TTL
+                               )
+@                IN NS         ns
+@                IN MX         10 mail
+@                IN A          {{ gateway }}
+ns               IN A          {{ network_|addr:ns }}
+mail             IN A          {{ network_|addr:mail }}
+{% for host in hosts %}{% if host.ip %}{{ host.hostname|stringformat:"-16s" }} IN A          {{ network_|addr:host.ip }}
+{% for alias in host.aliases %}{{ alias|stringformat:"-16s" }} IN CNAME      {{ host.hostname }}
+{% endfor %}{% endif %}{% endfor %}{% for n in dynamic_ %}{{ dynamic.format|format:forloop.counter0|stringformat:"-16s" }} IN A          {{ n }}
+{% endfor %}

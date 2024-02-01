@@ -1,0 +1,12 @@
+$TTL 1W
+@                IN SOA        ns.{{ domain }}. root.{{ domain }}. (
+                               {{ time|stringformat:"12d" }} ; Serial
+                                         3H ; Refresh
+                                        15M ; Retry
+                                         1W ; Expire
+                                         1D ; Negative Cache TTL
+                               )
+@                                IN NS      ns.{{ domain }}.
+{% for host in hosts %}{% if host.ip %}{{ network_|addr:host.ip|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ host.hostname }}.{{ domain }}.
+{% endif %}{% endfor %}{% for n in dynamic_ %}{{ n|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ dynamic.format|format:forloop.counter0 }}.{{ domain }}.
+{% endfor %}

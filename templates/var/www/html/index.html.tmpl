@@ -1,0 +1,43 @@
+<html>
+<head>
+  <title>{{ domain }}</title>
+  <style>
+  table, th, td {
+    border-collapse: collapse;
+    margin: 5px;
+    padding: 5px;
+  }
+  table, th {
+    border: 1px solid black;
+  }
+  th {
+    color: white;
+    background-color: black;
+    border: 1px solid black;
+  }
+  td {
+    border: 1px solid grey;
+  }
+  </style>
+</head>
+<body>
+<table style="">
+<tr>
+  <th>hostname</th>
+  <th>ip</th>
+  <th>hardware</th>
+  <th>description</th>
+  <th>aliases</th>
+</tr>
+{% for host in hosts %}{% if host.ip %}
+<tr>
+  <td><a href="http://{{ host.hostname }}.{{ domain }}">{{ host.hostname }}</a></td>
+  <td><a href="http://{{ network_|addr:host.ip }}">{{ network_|addr:host.ip }}</a></td>
+  <td>{{ host.hardware }}</td>
+  <td>{{ host.description }}</td>
+  <td>{% for alias in host.aliases %}{% if not forloop.first %}, {% endif %}<a href="http://{{ alias }}.{{ domain }}">{{ alias }}</a>{% endfor %}</td>
+</tr>
+{% endif %}{% endfor %}
+</table>
+</body>
+</html>

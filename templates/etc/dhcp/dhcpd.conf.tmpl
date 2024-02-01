@@ -1,0 +1,20 @@
+
+ddns-update-style none;
+default-lease-time 600;
+max-lease-time 7200;
+authoritative;
+
+subnet {{ network_|call:"network_address" }} netmask {{ network_|call:"netmask" }} {
+  range {{ network_|addr:dynamic.start }} {{ network_|addr:dynamic.end }};
+  option domain-name "{{ domain }}";
+  option domain-name-servers {{ dns|join:", " }};
+  option routers {{ gateway }};
+  option broadcast-address {{ network_|call:"broadcast_address" }};
+  option ntp-servers {{ ntp|network|join:", " }};
+}
+
+{% for host in hosts %}{% if host.ip %}host {{ host.hostname }} {
+  hardware ethernet {{ host.hardware }};
+  fixed-address {{ network_|addr:host.ip }};
+}
+{% endif %}{% endfor %}
