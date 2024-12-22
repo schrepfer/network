@@ -147,7 +147,7 @@ def check_flags(parser: argparse.ArgumentParser, args: argparse.Namespace) -> No
 
 def load_yaml(f: str) -> Any:
   with open(f) as fh:
-    return yaml.load(fh, Loader=yaml.CLoader)
+    return yaml.load(fh, Loader=yaml.Loader)
 
 
 mac_pattern = re.compile(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$')
@@ -203,6 +203,7 @@ def main(args: argparse.Namespace) -> int:
   register.filter('append', lambda v, attr: '{0}{1}'.format(v, attr))
 
   cmds = []
+  mkdirs = set()
 
   for tmpl, f in TEMPLATES.items():
     with open(os.path.join(args.templates, tmpl), 'r') as tf:
@@ -230,11 +231,15 @@ def main(args: argparse.Namespace) -> int:
           diff = 'diff {0} {1}'.format(
               os.path.join(args.root, output_base),
               output)
+          output_dir = os.path.join(args.root, os.path.dirname(output_base))
+          if output_dir not in mkdirs:
+            mkdir = 'sudo mkdir -p {0}'.format(output_dir)
+            cmds.append(mkdir)
+            mkdirs.add(output_dir)
           install = 'sudo install -v -m 644 -o root -g root -t {0} {1}'.format(
-              os.path.join(args.root, os.path.dirname(output_base)),
-              output)
-          logging.info(diff)
-          logging.info(install)
+              output_dir, output)
+          #logging.info(diff)
+          #logging.info(install)
           cmds.append(install)
           of.write(body)
 
