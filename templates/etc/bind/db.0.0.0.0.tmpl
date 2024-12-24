@@ -7,6 +7,7 @@ $TTL 1W
                                          1D ; Negative Cache TTL
                                )
 @                                IN NS      ns.{{ domain }}.
-{% for host in hosts %}{% if host.ip %}{{ network_|addr:host.ip|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ host.hostname }}.{{ domain }}.
-{% endif %}{% endfor %}{% for n in dynamic_ %}{{ n|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ dynamic.format|format:forloop.counter0 }}.{{ domain }}.
-{% endfor %}
+; Hosts{% for host in hosts %}{% if host.ip %}
+{{ network_|addr:host.ip|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ host.hostname }}.{{ domain }}.{% endif %}{% endfor %}
+; Dynamic hosts{% for n in dynamic_ %}
+{{ n|call:"reverse_pointer"|stringformat:"-32s" }} IN PTR     {{ dynamic.format|format:forloop.counter0 }}.{{ domain }}.{% endfor %}

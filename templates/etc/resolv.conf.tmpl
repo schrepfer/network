@@ -1,4 +1,3 @@
 domain {{ domain }}
-search {{ domain }}
-{% for ip in dns %}nameserver {{ ip }}
-{% endfor %}
+search {{ domain }}{% for ip in dns %}
+nameserver {{ ip }}{% endfor %}

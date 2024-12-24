@@ -17,7 +17,7 @@ from django import template
 from django.template.loader import render_to_string
 from django.conf import settings
 
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 TEMPLATES = {
@@ -67,7 +67,6 @@ def define_flags() -> argparse.Namespace:
       metavar='DIR')
   parser.add_argument(
       '--config', '-f',
-      nargs=1,
       type=str,
       help='path to the config file',
       metavar='PATH')
@@ -159,6 +158,14 @@ def normalize(mac: str) -> str:
       'mac address "{0}" => "{1}" not matching {2}'.format(mac, ret, mac_pattern))
   return ret
 
+def validate_host(host: dict[str, Any]) -> tuple[bool, Optional[str]]:
+  if 'ip' not in host:
+    return False, 'ip missing'
+  if 'hostname' not in host:
+    return False, 'hostname missing'
+  return True, None
+
+
 def main(args: argparse.Namespace) -> int:
   if not args.config:
     return 1
@@ -170,27 +177,77 @@ def main(args: argparse.Namespace) -> int:
     return 1
 
   tmp = '/tmp/network-%d' % os.getuid()
-  y = load_yaml(args.config[0])
+  y = load_yaml(args.config)
   y['time'] = int(time.time())
 
   pp = pprint.PrettyPrinter(indent=1)
   pp.pprint(y)
 
-  y['hosts'] = sorted(y['hosts'], key=lambda x: tuple(x.get('ip').split('.')))
+  hostnames = set()
+  hardwares = set()
+  ips = set()
+  errors = []
 
-  for host in y['hosts']:
+  for i, host in enumerate(y['hosts']):
+    ok, reason = validate_host(host)
+    if not ok:
+      errors.append(f'hosts[{i:d}] entry is invalid: {reason}')
+      continue
     if 'hardware' in host:
       host['hardware'] = normalize(host['hardware'])
+    if hostname := host.get('hostname'):
+      if hostname in hostnames:
+        errors.append(f'hosts[{i:d}].hostname {hostname!r} already used')
+      else:
+        hostnames.add(hostname)
+    if aliases := host.get('aliases'):
+      for j, alias in enumerate(host['aliases']):
+        if alias in hostnames:
+          errors.append(f'hosts[{i:d}].aliases[{j:d}] {alias!r} already used')
+        else:
+          hostnames.add(alias)
+    if hardware := host.get('hardware'):
+      if host['hardware'] in hardwares:
+        errors.append(f'hosts[{i:d}].hardware {hardware!r} already used')
+      else:
+        hardwares.add(hardware)
+    if ip := host.get('ip'):
+      if ip in ips:
+        errors.append(f'hosts[{i:d}].ip {ip!r} already used')
+      else:
+        ips.add(ip)
 
   network = IPv4Network(y['network'])
 
-  y.update({
-    'network_': network,
-    'dynamic_': [
+  dynamic_addrs = [
       IPv4Address(ip, prefixlen=network.prefixlen)
       for ip in range(int(network[y['dynamic']['start']]),
                       int(network[y['dynamic']['end']]) + 1)
-    ],
+  ]
+
+  if fmt := y['dynamic'].get('format'):
+    for i, addr in enumerate(dynamic_addrs):
+      ip = str(addr)
+      if ip in ips:
+        errors.append(f'dynamic[{i:d}]: ip {ip!r} already used')
+      else:
+        ips.add(ip)
+      hostname = fmt.format(i)
+      if hostname in hostnames:
+        errors.append(f'dynamic[{i:d}] hostname {hostname!r} already used')
+      else:
+        hostnames.add(hostname)
+
+  if errors:
+    logging.critical('Errors:\n\t%s', '\n\t'.join(errors))
+    return os.EX_CONFIG
+
+  # Sort it by the int value of the octets
+  y['hosts'] = sorted(y['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
+
+  y.update({
+    'network_': network,
+    'dynamic_': dynamic_addrs,
   })
 
   settings.configure(DEBUG=True)
@@ -227,10 +284,6 @@ def main(args: argparse.Namespace) -> int:
       else:
         os.makedirs(os.path.dirname(output), exist_ok=True)
         with open(output, 'w') as of:
-          #logging.info('Writing %s..', output)
-          diff = 'diff {0} {1}'.format(
-              os.path.join(args.root, output_base),
-              output)
           output_dir = os.path.join(args.root, os.path.dirname(output_base))
           if output_dir not in mkdirs:
             mkdir = 'sudo mkdir -p {0}'.format(output_dir)
@@ -238,8 +291,6 @@ def main(args: argparse.Namespace) -> int:
             mkdirs.add(output_dir)
           install = 'sudo install -v -m 644 -o root -g root -t {0} {1}'.format(
               output_dir, output)
-          #logging.info(diff)
-          #logging.info(install)
           cmds.append(install)
           of.write(body)
 

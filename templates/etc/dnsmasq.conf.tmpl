@@ -1,8 +1,6 @@
 # Configuration file for dnsmasq.
 
 port=53
-#domain-needed
-#bogus-priv
 
 log-dhcp
 log-facility=/var/log/dnsmasq.log
@@ -33,5 +31,5 @@ mx-host={{ domain }},mail.{{ domain }},10
 address=/mail.{{ domain }}/{{ network_|addr:mail }}
 address=/ns.{{ domain }}/{{ network_|addr:ns }}
 
-{% for host in hosts %}{% if host.ip %}dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},168h
-{% endif %}{% endfor %}
+# DHCP{% for host in hosts %}{% if host.ip and host.hardware %}
+dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},168h{% endif %}{% endfor %}
