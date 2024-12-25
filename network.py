@@ -13,9 +13,9 @@ import sys
 import time
 import yaml
 
-from django import template
-from django.template.loader import render_to_string
-from django.conf import settings
+from django import template                         # type: ignore
+from django.template.loader import render_to_string # type: ignore
+from django.conf import settings                    # type: ignore
 
 from typing import Any, Optional, Union
 
@@ -149,14 +149,9 @@ def load_yaml(f: str) -> Any:
     return yaml.load(fh, Loader=yaml.Loader)
 
 
-mac_pattern = re.compile(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$')
-
 def normalize(mac: str) -> str:
-  ret = ':'.join(re.findall(r'([0-9a-f]{2})',
-    mac.lower().replace('-', '').replace(':', '')))
-  assert mac_pattern.match(ret), (
-      'mac address "{0}" => "{1}" not matching {2}'.format(mac, ret, mac_pattern))
-  return ret
+  return mac.lower().replace('-', ':')
+
 
 def validate_host(host: dict[str, Any]) -> tuple[bool, Optional[str]]:
   if 'ip' not in host:
@@ -164,6 +159,9 @@ def validate_host(host: dict[str, Any]) -> tuple[bool, Optional[str]]:
   if 'hostname' not in host:
     return False, 'hostname missing'
   return True, None
+
+
+MAC_RE = re.compile(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$')
 
 
 def main(args: argparse.Namespace) -> int:
@@ -193,8 +191,6 @@ def main(args: argparse.Namespace) -> int:
     if not ok:
       errors.append(f'hosts[{i:d}] entry is invalid: {reason}')
       continue
-    if 'hardware' in host:
-      host['hardware'] = normalize(host['hardware'])
     if hostname := host.get('hostname'):
       if hostname in hostnames:
         errors.append(f'hosts[{i:d}].hostname {hostname!r} already used')
@@ -207,10 +203,18 @@ def main(args: argparse.Namespace) -> int:
         else:
           hostnames.add(alias)
     if hardware := host.get('hardware'):
-      if host['hardware'] in hardwares:
-        errors.append(f'hosts[{i:d}].hardware {hardware!r} already used')
+      normalized_hardware = normalize(hardware)
+      if not MAC_RE.match(normalized_hardware):
+        errors.append(
+            f'hosts[{i:d}].hardware normalized({hardware!r}) => {normalized_hardware!r} '
+            f'does not match {MAC_RE}'
+        )
       else:
-        hardwares.add(hardware)
+        host['hardware'] = hardware = normalized_hardware
+        if hardware in hardwares:
+          errors.append(f'hosts[{i:d}].hardware {hardware!r} already used')
+        else:
+          hardwares.add(hardware)
     if ip := host.get('ip'):
       if ip in ips:
         errors.append(f'hosts[{i:d}].ip {ip!r} already used')
