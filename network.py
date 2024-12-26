@@ -51,6 +51,12 @@ def define_flags() -> argparse.Namespace:
       help='the output root; where the files end up',
       metavar='DIR')
   parser.add_argument(
+      '--time', '-s',
+      type=int,
+      default=int(time.time()),
+      help='the time to used in the output',
+      metavar='SECONDS')
+  parser.add_argument(
       '--print', '-p',
       action='store_true',
       default=False,
@@ -158,7 +164,7 @@ def main(args: argparse.Namespace) -> int:
 
   tmp = '/tmp/network-%d' % os.getuid()
   cfg = config.load_yaml(args.config)
-  cfg['time'] = int(time.time())
+  cfg['time'] = args.time
 
   pp = pprint.PrettyPrinter(indent=1)
   logging.debug('Config: %s', pp.pformat(cfg))
@@ -204,22 +210,23 @@ def main(args: argparse.Namespace) -> int:
         if not os.path.isfile(output):
           logging.info('Output file does not exist: %s', output)
         else:
-          with open(output, 'r') as of:
-            print('\n'.join(difflib.unified_diff(
-              of.read().split('\n'),
-              body.split('\n'),
-              fromfile=output,
-              tofile=tmpl)))
+          final_output = os.path.join(args.root, output_base)
+          with open(final_output, 'r') as of:
+            if diffs := list(difflib.unified_diff(
+                of.read().split('\n'),
+                body.split('\n'),
+                fromfile=final_output,
+                tofile=tmpl)):
+              print('\n'.join(diffs))
       else:
         os.makedirs(os.path.dirname(output), exist_ok=True)
         with open(output, 'w') as of:
           output_dir = os.path.join(args.root, os.path.dirname(output_base))
           if output_dir not in mkdirs:
-            mkdir = 'sudo mkdir -p {0}'.format(output_dir)
+            mkdir = f'sudo mkdir -p {output_dir}'
             cmds.append(mkdir)
             mkdirs.add(output_dir)
-          install = 'sudo install -v -m 644 -o root -g root -t {0} {1}'.format(
-              output_dir, output)
+          install = f'sudo install -v -m 644 -o root -g root -t {output_dir} {output}'
           cmds.append(install)
           of.write(body)
 
