@@ -2,6 +2,8 @@
 
 """Program intended to help parsing dnsmasq.log files."""
 
+import config
+
 import argparse
 import logging
 import os
@@ -124,6 +126,7 @@ class DHCP:
 
 
 def main(args: argparse.Namespace) -> int:
+  cfg = config.load_yaml(args.config)
   entries: dict[int, DHCP] = {}
   with open(args.log) as fh:
     for i, line in enumerate(fh):
@@ -158,8 +161,11 @@ def main(args: argparse.Namespace) -> int:
         continue
     hardwares[entry.hardware] = entry
 
+  existing_hardwares = set(h['hardware'] for h in cfg['hosts'] if 'hardware' in h)
+
   for _, entry in sorted(hardwares.items(), key=lambda x: x[1].hardware):
-    print(entry) 
+    if entry.hardware not in existing_hardwares:
+      print(entry) 
 
   return os.EX_OK
 

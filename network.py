@@ -2,6 +2,8 @@
 
 """Generate network configurations."""
 
+import config
+
 import argparse
 import difflib
 import ipaddress
@@ -144,26 +146,6 @@ def check_flags(parser: argparse.ArgumentParser, args: argparse.Namespace) -> No
   return None
 
 
-def load_yaml(f: str) -> Any:
-  with open(f) as fh:
-    return yaml.load(fh, Loader=yaml.Loader)
-
-
-def normalize(mac: str) -> str:
-  return mac.lower().replace('-', ':')
-
-
-def validate_host(host: dict[str, Any]) -> tuple[bool, Optional[str]]:
-  if 'ip' not in host:
-    return False, 'ip missing'
-  if 'hostname' not in host:
-    return False, 'hostname missing'
-  return True, None
-
-
-MAC_RE = re.compile(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$')
-
-
 def main(args: argparse.Namespace) -> int:
   if not args.config:
     return 1
@@ -175,87 +157,30 @@ def main(args: argparse.Namespace) -> int:
     return 1
 
   tmp = '/tmp/network-%d' % os.getuid()
-  y = load_yaml(args.config)
-  y['time'] = int(time.time())
+  cfg = config.load_yaml(args.config)
+  cfg['time'] = int(time.time())
 
   pp = pprint.PrettyPrinter(indent=1)
-  pp.pprint(y)
+  logging.debug('Config: %s', pp.pformat(cfg))
 
-  hostnames = set()
-  hardwares = set()
-  ips = set()
-  errors = []
-
-  for i, host in enumerate(y['hosts']):
-    ok, reason = validate_host(host)
-    if not ok:
-      errors.append(f'hosts[{i:d}] entry is invalid: {reason}')
-      continue
-    if hostname := host.get('hostname'):
-      if hostname in hostnames:
-        errors.append(f'hosts[{i:d}].hostname {hostname!r} already used')
-      else:
-        hostnames.add(hostname)
-    if aliases := host.get('aliases'):
-      for j, alias in enumerate(host['aliases']):
-        if alias in hostnames:
-          errors.append(f'hosts[{i:d}].aliases[{j:d}] {alias!r} already used')
-        else:
-          hostnames.add(alias)
-    if hardware := host.get('hardware'):
-      normalized_hardware = normalize(hardware)
-      if not MAC_RE.match(normalized_hardware):
-        errors.append(
-            f'hosts[{i:d}].hardware normalized({hardware!r}) => {normalized_hardware!r} '
-            f'does not match {MAC_RE}'
-        )
-      else:
-        host['hardware'] = hardware = normalized_hardware
-        if hardware in hardwares:
-          errors.append(f'hosts[{i:d}].hardware {hardware!r} already used')
-        else:
-          hardwares.add(hardware)
-    if ip := host.get('ip'):
-      if ip in ips:
-        errors.append(f'hosts[{i:d}].ip {ip!r} already used')
-      else:
-        ips.add(ip)
-
-  network = IPv4Network(y['network'])
+  network = IPv4Network(cfg['network'])
 
   dynamic_addrs = [
       IPv4Address(ip, prefixlen=network.prefixlen)
-      for ip in range(int(network[y['dynamic']['start']]),
-                      int(network[y['dynamic']['end']]) + 1)
+      for ip in range(int(network[cfg['dynamic']['start']]),
+                      int(network[cfg['dynamic']['end']]) + 1)
   ]
 
-  if fmt := y['dynamic'].get('format'):
-    for i, addr in enumerate(dynamic_addrs):
-      ip = str(addr)
-      if ip in ips:
-        errors.append(f'dynamic[{i:d}]: ip {ip!r} already used')
-      else:
-        ips.add(ip)
-      hostname = fmt.format(i)
-      if hostname in hostnames:
-        errors.append(f'dynamic[{i:d}] hostname {hostname!r} already used')
-      else:
-        hostnames.add(hostname)
-
-  if errors:
-    logging.critical('Errors:\n\t%s', '\n\t'.join(errors))
-    return os.EX_CONFIG
-
   # Sort it by the int value of the octets
-  y['hosts'] = sorted(y['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
+  cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
 
-  y.update({
+  cfg.update({
     'network_': network,
     'dynamic_': dynamic_addrs,
   })
 
   settings.configure(DEBUG=True)
-  ctx = template.Context(y)
+  ctx = template.Context(cfg)
   register = template.Library()
   register.filter('network', lambda vv: [network[v] for v in vv])
   register.filter('format', lambda v, fmt: v.format(fmt))
@@ -298,7 +223,8 @@ def main(args: argparse.Namespace) -> int:
           cmds.append(install)
           of.write(body)
 
-  logging.info('Install cmds:\n' + ' \\\n  && '.join(cmds))
+  if cmds:
+    logging.info('Install cmds:\n' + ' \\\n  && '.join(cmds))
 
   return os.EX_OK
 

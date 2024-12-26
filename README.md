@@ -2,11 +2,12 @@
 
 ## Install
 
-You need django templates available to use this. You can install this via **apt** or **pip3
-install**.
+You need django templates and the schema library available to use this. You can install this via
+**apt** or **pip3 install**.
 
 ```shell
 apt install python3-django
+apt install python3-schema
 ```
 
 ## Configuration
