@@ -14,14 +14,17 @@ expand-hosts
 local=/{{ domain }}/
 domain={{ domain }}
 
-dhcp-range={{ network_|addr:dynamic.start }},{{ network_|addr:dynamic.end }},20h
+dhcp-range={{ network_|addr:dynamic.start }},{{ network_|addr:dynamic.end }},24h
 dhcp-option=option:router,{{ gateway }}
 dhcp-option=option:domain-name,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
 dhcp-option=option:dns-server,{{ dns|join:"," }}
+dhcp-authoritative
+no-dhcp-interface=wlan0
 
 no-resolv
 server=8.8.8.8
+server=4.2.2.1
 server=1.1.1.1
 
 auth-server=ns.{{ domain }}
@@ -32,4 +35,4 @@ address=/mail.{{ domain }}/{{ network_|addr:mail }}
 address=/ns.{{ domain }}/{{ network_|addr:ns }}
 
 # DHCP{% for host in hosts %}{% if host.ip and host.hardware %}
-dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},168h{% endif %}{% endfor %}
+dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},24h{% endif %}{% endfor %}
