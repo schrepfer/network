@@ -29,6 +29,8 @@ TEMPLATES = {
   'etc/dhcp/dhcpd.conf.tmpl': 'etc/dhcp/dhcpd.conf',
   'etc/dnsmasq.conf.tmpl': 'etc/dnsmasq.conf',
   'etc/hosts.tmpl': 'etc/hosts',
+  'etc/mailname.tmpl': 'etc/mailname',
+  'etc/postfix/main.cf.tmpl': 'etc/postfix/main.cf',
   'etc/resolv.conf.tmpl': 'etc/resolv.conf',
   'var/www/html/index.html.tmpl': 'var/www/html/index.html',
 }
@@ -196,6 +198,7 @@ def main(args: argparse.Namespace) -> int:
 
   cmds = []
   mkdirs = set()
+  num_diffs = 0
 
   for tmpl, f in TEMPLATES.items():
     with open(os.path.join(args.templates, tmpl), 'r') as tf:
@@ -204,13 +207,13 @@ def main(args: argparse.Namespace) -> int:
       body = engine.from_string(tf.read()).render(ctx)
       output_base = engine.from_string(f).render(ctx)
       output = os.path.join(tmp, output_base)
+      final_output = os.path.join(args.root, output_base)
       if args.print:
           print('{0}:\n{1}\n'.format(output, body))
       elif args.diff:
-        if not os.path.isfile(output):
-          logging.info('Output file does not exist: %s', output)
+        if not os.path.isfile(final_output):
+          logging.info('Output file does not exist: %s', final_output)
         else:
-          final_output = os.path.join(args.root, output_base)
           with open(final_output, 'r') as of:
             if diffs := list(difflib.unified_diff(
                 of.read().split('\n'),
@@ -218,6 +221,7 @@ def main(args: argparse.Namespace) -> int:
                 fromfile=final_output,
                 tofile=tmpl)):
               print('\n'.join(diffs))
+              num_diffs += 1
       else:
         os.makedirs(os.path.dirname(output), exist_ok=True)
         with open(output, 'w') as of:
@@ -233,7 +237,7 @@ def main(args: argparse.Namespace) -> int:
   if cmds:
     logging.info('Install cmds:\n' + ' \\\n  && '.join(cmds))
 
-  return os.EX_OK
+  return num_diffs
 
 
 if __name__ == '__main__':
