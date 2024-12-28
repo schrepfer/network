@@ -163,7 +163,7 @@ def main(args: argparse.Namespace) -> int:
 
   existing_hardwares = set(h['hardware'] for h in cfg['hosts'] if 'hardware' in h)
 
-  for _, entry in sorted(hardwares.items(), key=lambda x: x[1].hardware):
+  for _, entry in sorted(hardwares.items(), key=lambda x: x[1].index):
     if entry.hardware not in existing_hardwares:
       print(entry) 
 

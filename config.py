@@ -1,4 +1,5 @@
 import logging
+import re
 import yaml
 from typing import Any, Optional
 
@@ -30,8 +31,9 @@ class HardwareAddress:
   def validate(self, data, **kwargs):
     return schema.And(
       str,
-      schema.Use(lambda s: str.lower(s).replace('-', ':')),
-      schema.Regex(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$'),
+      schema.Use(lambda s: re.sub(r'[:.-]', '', str.lower(s))),
+      schema.Regex(r'^[0-9a-f]{12}$'),
+      schema.Use(lambda s: ':'.join(s[i:i+2] for i in range(0, len(s), 2))),
     ).validate(data, **kwargs)
 
 
