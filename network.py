@@ -32,6 +32,7 @@ TEMPLATES = {
   'etc/mailname.tmpl': 'etc/mailname',
   'etc/postfix/main.cf.tmpl': 'etc/postfix/main.cf',
   'etc/resolv.conf.tmpl': 'etc/resolv.conf',
+  'tmp/edgerouter.txt.tmpl': 'tmp/edgerouter.txt',
   'var/www/html/index.html.tmpl': 'var/www/html/index.html',
 }
 
