@@ -1,0 +1,91 @@
+:root {
+  --primary-color: #2d3436;
+  --accent-color: #0984e3;
+  --bg-color: #f9f9f9;
+  --row-hover: #e1f5fe;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  margin: 40px;
+  line-height: 1.6;
+}
+
+h1 {
+  text-align: center;
+  font-weight: 300;
+  color: #636e72;
+}
+
+table {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden; /* Ensures corners are rounded */
+}
+
+th {
+  background-color: var(--primary-color);
+  color: white;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-align: left;
+  padding: 15px;
+}
+
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Zebra Striping */
+tr:nth-child(even) {
+  background-color: #fcfcfc;
+}
+
+/* Hover Effect */
+tr:hover {
+  background-color: var(--row-hover) !important;
+  transition: background-color 0.2s ease;
+}
+
+/* Links */
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Hardware MAC address styling */
+td:nth-child(3) {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  color: #636e72;
+}
+
+/* Small tag style for aliases */
+.alias {
+  display: inline-block;
+  background: #dfe6e9;
+  color: #2d3436;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin: 2px;
+}
