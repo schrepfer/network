@@ -34,6 +34,7 @@ TEMPLATES = {
   'etc/resolv.conf.tmpl': 'etc/resolv.conf',
   'tmp/edgerouter.txt.tmpl': 'tmp/edgerouter.txt',
   'var/www/html/index.html.tmpl': 'var/www/html/index.html',
+  'var/www/html/style.css.tmpl': 'var/www/html/style.css',
 }
 
 
