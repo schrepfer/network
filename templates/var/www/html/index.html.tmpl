@@ -16,7 +16,7 @@
 {% for host in hosts %}{% if host.ip %}{% if not host.tags or "hidden" not in host.tags %}
 <tr>
   <td><a href="http://{{ host.hostname }}.{{ domain }}">{{ host.hostname }}</a></td>
-  <td><a href="http://{{ network_|addr:host.ip }}">{{ network_|addr:host.ip }}</a></td>
+  <td><a href="http://{{ host.ip|network }}">{{ host.ip|network }}</a></td>
   <td>{% if host.hardware %}{{ host.hardware }}{% endif %}</td>
   <td>{% if host.description %}{{ host.description }}{% endif %}</td>
   <td>{% for alias in host.aliases %}{% if not forloop.first %}, {% endif %}<a href="http://{{ alias }}.{{ domain }}">{{ alias }}</a>{% endfor %}</td>

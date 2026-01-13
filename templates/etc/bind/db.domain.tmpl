@@ -8,11 +8,11 @@ $TTL 1W
                                )
 @                IN NS         ns
 @                IN MX         10 mail
-@                IN A          {{ gateway }}
-ns               IN A          {{ network_|addr:ns }}
-mail             IN A          {{ network_|addr:mail }}
+@                IN A          {{ gateway|network }}
+ns               IN A          {{ ns|network }}
+mail             IN A          {{ mail|network }}
 ; Hosts{% for host in hosts %}{% if host.ip %}
-{{ host.hostname|stringformat:"-24s" }} IN A          {{ network_|addr:host.ip }}{% for alias in host.aliases %}
+{{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip|network }}{% for alias in host.aliases %}
 {{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}
 ; Dynamic hosts{% for n in dynamic_ %}
 {{ dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}

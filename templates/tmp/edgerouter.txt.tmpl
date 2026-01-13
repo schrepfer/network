@@ -1,4 +1,4 @@
 configure{% for host in hosts %}{% if host.ip and host.hardware %}
-set service dhcp-server shared-network-name LAN1 subnet {{ network }} static-mapping {{ host.hostname }} ip-address {{ network_|addr:host.ip }}
+set service dhcp-server shared-network-name LAN1 subnet {{ network }} static-mapping {{ host.hostname }} ip-address {{ host.ip|network }}
 set service dhcp-server shared-network-name LAN1 subnet {{ network }} static-mapping {{ host.hostname }} mac-address {{ host.hardware }}{% endif %}{% endfor %}
 commit

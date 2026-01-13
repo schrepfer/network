@@ -144,7 +144,10 @@ class IPv4Network(ipaddress.IPv4Network):
   def __getitem__(self, n: Union[int, str]) -> ipaddress.IPv4Address:
     if isinstance(n, str):
       n = int(self._address_class(n))
-    return super().__getitem__(n)
+    try:
+      return super().__getitem__(n)
+    except IndexError:
+      return ipaddress.ip_address(n)
 
   @property
   def octets(self) -> tuple[int, ...]:
@@ -192,7 +195,10 @@ def main(args: argparse.Namespace) -> int:
   settings.configure(DEBUG=True)
   ctx = template.Context(cfg)
   register = template.Library()
-  register.filter('network', lambda vv: [network[v] for v in vv])
+  register.filter('network', lambda vv: (
+    [network[v] for v in vv]
+    if isinstance(vv, list) else
+    network[vv]))
   register.filter('format', lambda v, fmt: v.format(fmt))
   register.filter('addr', lambda v, ip: v[ip])
   register.filter('call', lambda v, attr: getattr(v, attr))

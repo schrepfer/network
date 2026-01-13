@@ -1,7 +1,7 @@
 127.0.0.1	localhost
 
 # Hosts{% for host in hosts %}{% if host.ip %}
-{{ network_|addr:host.ip }} {{ host.hostname }}{% for alias in host.aliases %} {{ alias }}{% endfor %}{% endif %}{% endfor %}
+{{ host.ip|network }} {{ host.hostname }}{% for alias in host.aliases %} {{ alias }}{% endfor %}{% endif %}{% endfor %}
 
 # Dynamic hosts{% for n in dynamic_ %}
 {{ n }} {{ dynamic.format|format:forloop.counter0 }}{% endfor %}

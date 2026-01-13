@@ -2,7 +2,7 @@
 # ft=dnsmasq
 
 port=53
-listen-address={{ network_|addr:known_dns }}
+listen-address={{ known_dns|network }}
 listen-address=127.0.0.1
 bind-interfaces
 
@@ -18,12 +18,12 @@ expand-hosts
 local=/{{ domain }}/
 domain={{ domain }}
 
-dhcp-range={{ network_|addr:dynamic.start }},{{ network_|addr:dynamic.end }},24h
-dhcp-option=option:router,{{ gateway }}
+dhcp-range={{ dynamic.start|network }},{{ dynamic.end|network }},24h
+dhcp-option=option:router,{{ gateway|network }}
 dhcp-option=option:domain-name,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
-dhcp-option=tag:known,tag:!safe,option:dns-server,{{ network_|addr:known_dns }},{{ dns_servers|join:"," }}
-dhcp-option=tag:!known,option:dns-server,{{ network_|addr:safe_dns }}
+dhcp-option=tag:known,tag:!safe,option:dns-server,{{ known_dns|network }},{{ dns_servers|join:"," }}
+dhcp-option=tag:!known,option:dns-server,{{ safe_dns|network }}
 dhcp-authoritative
 no-dhcp-interface=wlan0
 
@@ -35,8 +35,8 @@ auth-server=ns.{{ domain }}
 auth-zone={{ domain }},{{ network }}
 auth-soa={{ time|stringformat:"d" }},root.{{ domain }}
 mx-host={{ domain }},mail.{{ domain }},10
-address=/mail.{{ domain }}/{{ network_|addr:mail }}
-address=/ns.{{ domain }}/{{ network_|addr:ns }}
+address=/mail.{{ domain }}/{{ mail|network }}
+address=/ns.{{ domain }}/{{ ns|network }}
 
 # DHCP{% for host in hosts %}{% if host.ip and host.hardware %}
-dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ network_|addr:host.ip }},24h{% endif %}{% endfor %}
+dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ host.ip|network }},24h{% endif %}{% endfor %}
