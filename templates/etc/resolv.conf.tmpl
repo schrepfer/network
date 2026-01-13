@@ -1,3 +1,4 @@
 domain {{ domain }}
-search {{ domain }}{% for ip in dns %}
-nameserver {{ ip }}{% endfor %}
+search {{ domain }}
+nameserver {{ network_|addr:known_dns }}{% for server in dns_servers %}
+nameserver {{ server }}{% endfor %}

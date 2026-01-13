@@ -56,7 +56,9 @@ SCHEMA = schema.Schema(
     'gateway': IPAddress(),
     'network': Network(),
     'ntp': [IPAddress()],
-    'dns': [IPAddress()],
+    'safe_dns': IPAddress(),
+    'known_dns': IPAddress(),
+    'dns_servers': [IPAddress()],
     'ns': IPAddress(),
     'mail': IPAddress(),
     'dynamic': {
@@ -69,6 +71,7 @@ SCHEMA = schema.Schema(
         schema.Optional('hardware'): HardwareAddress(),
         'ip': IPAddress(),
         'hostname': str,
+        schema.Optional('tags'): [str],
         schema.Optional('aliases'): [str],
         schema.Optional('description'): str
       }

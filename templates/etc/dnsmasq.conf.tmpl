@@ -1,6 +1,10 @@
 # Configuration file for dnsmasq.
+# ft=dnsmasq
 
 port=53
+listen-address={{ network_|addr:known_dns }}
+listen-address=127.0.0.1
+bind-interfaces
 
 log-dhcp
 log-facility=/var/log/dnsmasq.log
@@ -18,28 +22,14 @@ dhcp-range={{ network_|addr:dynamic.start }},{{ network_|addr:dynamic.end }},24h
 dhcp-option=option:router,{{ gateway }}
 dhcp-option=option:domain-name,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
-dhcp-option=option:dns-server,{{ dns|join:"," }}
+dhcp-option=tag:known,tag:!safe,option:dns-server,{{ network_|addr:known_dns }},{{ dns_servers|join:"," }}
+dhcp-option=tag:!known,option:dns-server,{{ network_|addr:safe_dns }}
 dhcp-authoritative
 no-dhcp-interface=wlan0
 
 no-resolv
-server=8.8.8.8
-server=4.2.2.1
-server=1.1.1.1
-
-# safesearch
-host-record=forcesafesearch.google.com,216.239.38.120
-host-record=strict.bing.com,204.79.197.220
-host-record=restrictmoderate.youtube.com,216.239.38.119
-host-record=safe.duckduckgo.com,52.250.41.2
-cname=www.google.com,forcesafesearch.google.com
-cname=www.bing.com,strict.bing.com
-cname=www.youtube.com,restrictmoderate.youtube.com
-cname=m.youtube.com,restrictmoderate.youtube.com
-cname=youtubei.googleapis.com,restrictmoderate.youtube.com
-cname=youtube.googleapis.com,restrictmoderate.youtube.com
-cname=www.youtube-nocookie.com,restrictmoderate.youtube.com
-cname=www.duckduckgo.com,safe.duckduckgo.com
+{% for server in dns_servers %}
+server={{ server }}{% endfor %}
 
 auth-server=ns.{{ domain }}
 auth-zone={{ domain }},{{ network }}
@@ -49,4 +39,4 @@ address=/mail.{{ domain }}/{{ network_|addr:mail }}
 address=/ns.{{ domain }}/{{ network_|addr:ns }}
 
 # DHCP{% for host in hosts %}{% if host.ip and host.hardware %}
-dhcp-host={{ host.hardware }},{{ network_|addr:host.ip }},24h{% endif %}{% endfor %}
+dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ network_|addr:host.ip }},24h{% endif %}{% endfor %}

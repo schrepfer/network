@@ -197,6 +197,7 @@ def main(args: argparse.Namespace) -> int:
   register.filter('addr', lambda v, ip: v[ip])
   register.filter('call', lambda v, attr: getattr(v, attr))
   register.filter('append', lambda v, attr: '{0}{1}'.format(v, attr))
+  register.filter('tag', lambda v, tag: any(t == tag for t in v.tags))
 
   cmds = []
   mkdirs = set()
