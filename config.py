@@ -73,9 +73,15 @@ SCHEMA = schema.Schema(
         'hostname': str,
         schema.Optional('tags'): [str],
         schema.Optional('aliases'): [str],
+        schema.Optional('ports'): [
+          {
+            'name': str,
+            'port': int,
+          },
+        ],
         schema.Optional('description'): str
       }
-    ]
+    ],
   },
 )
 

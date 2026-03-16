@@ -9,6 +9,7 @@ import difflib
 import ipaddress
 import logging
 import os
+import pathlib
 import pprint
 import re
 import sys
@@ -188,6 +189,7 @@ def main(args: argparse.Namespace) -> int:
   cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
 
   cfg.update({
+    'home_': pathlib.Path.home(),
     'network_': network,
     'dynamic_': dynamic_addrs,
   })

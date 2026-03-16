@@ -1,4 +1,4 @@
 domain {{ domain }}
 search {{ domain }}
 nameserver {{ known_dns|network }}{% for server in dns_servers %}
-nameserver {{ server }}{% endfor %}
+nameserver {{ server|network }}{% endfor %}

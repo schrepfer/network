@@ -21,15 +21,16 @@ domain={{ domain }}
 dhcp-range={{ dynamic.start|network }},{{ dynamic.end|network }},24h
 dhcp-option=option:router,{{ gateway|network }}
 dhcp-option=option:domain-name,{{ domain }}
+dhcp-option=option:domain-search,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
-dhcp-option=tag:known,tag:!safe,option:dns-server,{{ known_dns|network }},{{ dns_servers|join:"," }}
-dhcp-option=tag:!known,option:dns-server,{{ safe_dns|network }}
+dhcp-option=tag:known,tag:!safe,option:dns-server,{{ known_dns|network }}
+dhcp-option=option:dns-server,{{ safe_dns|network }}
 dhcp-authoritative
 no-dhcp-interface=wlan0
 
 no-resolv
 {% for server in dns_servers %}
-server={{ server }}{% endfor %}
+server={{ server|network }}{% endfor %}
 
 auth-server=ns.{{ domain }}
 auth-zone={{ domain }},{{ network }}

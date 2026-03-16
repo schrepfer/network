@@ -28,12 +28,13 @@ recipient_delimiter = +
 inet_interfaces = all
 inet_protocols = all
 
-# SendGrid
+# Smtp2Go
 smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_tls_security_level = may
+header_size_limit = 4096000
+relayhost = [mail.smtp2go.com]:587
+relay_destination_concurrency_limit = 20
+
 # Set credentials in sasl_passwd and run "sudo postmap /etc/postfix/sasl_passwd"
 smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
-smtp_sasl_security_options = noanonymous
-smtp_sasl_tls_security_options = noanonymous
-smtp_tls_security_level = encrypt
-header_size_limit = 4096000
-relayhost = [smtp.sendgrid.net]:587
