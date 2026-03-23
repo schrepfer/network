@@ -1,0 +1,10 @@
+[Unit]
+Description=Power Detect Service
+ConditionPathExists={{ home_ }}/power-detect/power-detect.py
+After=network.target
+
+[Service]
+ExecStart=python3 {{ home_ }}/power-detect/power-detect.py
+
+[Install]
+WantedBy=multi-user.target
