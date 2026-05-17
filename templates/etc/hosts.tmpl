@@ -3,8 +3,11 @@
 # Hosts{% for host in hosts %}{% if host.ip %}
 {{ host.ip|network }} {{ host.hostname }}.{{ domain }} {{ host.hostname }}{% for alias in host.aliases %} {{ alias }}{% endfor %}{% endif %}{% endfor %}
 
-# Dynamic hosts{% for n in dynamic_ %}
-{{ n }} {{ dynamic.format|format:forloop.counter0 }}{% endfor %}
+# Dynamic hosts{% for n in network_.dynamic_range %}
+{{ n }} {{ dynamic.format|format:forloop.counter0 }}{% endfor %}{% for vlan in vlans_ %}
+
+# {{ vlan.name }}{% for n in vlan.dynamic_range %}
+{{ n }} {{ vlan.dynamic.format|format:forloop.counter0 }}{% endfor %}{% endfor %}
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback

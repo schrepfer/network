@@ -56,8 +56,10 @@ SCHEMA = schema.Schema(
     'gateway': IPAddress(),
     'network': Network(),
     'ntp': [IPAddress()],
+    'unifi': IPAddress(),
     'safe_dns': IPAddress(),
     'known_dns': IPAddress(),
+    'dhcp': str,
     'dns_servers': [IPAddress()],
     'ns': IPAddress(),
     'mail': IPAddress(),
@@ -66,6 +68,20 @@ SCHEMA = schema.Schema(
       'end': IPAddress(),
       'format': Format(0),
     },
+    'vlans': [
+      {
+        'name': str,
+        'gateway': IPAddress(),
+        'network': Network(),
+        'dynamic': {
+          'start': IPAddress(),
+          'end': IPAddress(),
+          'format': Format(0),
+        },
+        schema.Optional('description'): str,
+        schema.Optional('tags'): [str],
+      },
+    ],
     'hosts': [
       {
         schema.Optional('hardware'): HardwareAddress(),

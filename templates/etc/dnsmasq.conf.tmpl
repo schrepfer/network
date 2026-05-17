@@ -18,6 +18,7 @@ expand-hosts
 local=/{{ domain }}/
 domain={{ domain }}
 
+# Default
 dhcp-range={{ dynamic.start|network }},{{ dynamic.end|network }},24h
 dhcp-option=option:router,{{ gateway|network }}
 dhcp-option=option:domain-name,{{ domain }}
@@ -25,6 +26,14 @@ dhcp-option=option:domain-search,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|network|join:"," }}
 dhcp-option=tag:known,tag:!safe,option:dns-server,{{ known_dns|network }}
 dhcp-option=option:dns-server,{{ safe_dns|network }}
+{% for vlan in vlans_ %}
+# {{ vlan.name }}: {{ vlan.description }}
+dhcp-range=set:{{ vlan.name|lower }},{{ vlan.dynamic_start }},{{ vlan.dynamic_end }},{{ vlan.netmask }},24h
+dhcp-option=tag:{{ vlan.name|lower }},option:router,{{ vlan.gateway }}
+dhcp-option=tag:{{ vlan.name|lower }},option:dns-server,{% if "safe" in vlan.tags %}{{ safe_dns|network }}{% else %}{{ known_dns|network }}{% endif %}
+dhcp-option=tag:{{ vlan.name|lower }},option:domain-name,{{ domain }}
+dhcp-option=tag:{{ vlan.name|lower }},option:domain-search,{{ domain }}
+{% endfor %}
 dhcp-authoritative
 no-dhcp-interface=wlan0
 

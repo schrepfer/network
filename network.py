@@ -155,6 +155,46 @@ class IPv4Network(ipaddress.IPv4Network):
     return tuple((int(self.network_address) & 0xff << (i*8)) >> i*8 for i in [3, 2, 1, 0])
 
 
+class Network(IPv4Network):
+  """A network configuration."""
+
+  def __init__(self, cfg: dict[str, Any]):
+    super().__init__(cfg['network'])
+    self.cfg = cfg
+
+  @property
+  def gateway(self) -> IPv4Address:
+    return self[self.cfg['gateway']]
+
+  @property
+  def tags(self) -> list[str]:
+    return self.cfg.get('tags', [])
+
+  @property
+  def dynamic_start(self) -> IPv4Address:
+    return self[self.cfg['dynamic']['start']]
+
+  @property
+  def dynamic_end(self) -> IPv4Address:
+    return self[self.cfg['dynamic']['end']]
+
+  @property
+  def dynamic_range(self) -> list[IPv4Address]:
+    return [
+        IPv4Address(ip, prefixlen=self.prefixlen)
+        for ip in range(int(self.dynamic_start), int(self.dynamic_end) + 1)
+    ]
+
+  def __getattr__(self, name: str) -> Any:
+    try:
+      return self.cfg[name]
+    except KeyError:
+      raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+  def get(self, name: str, default: Any = None) -> Any:
+    return self.cfg.get(name, default)
+
+
 def check_flags(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
   # See: http://docs.python.org/2/library/argparse.html#exiting-methods
   return None
@@ -177,13 +217,8 @@ def main(args: argparse.Namespace) -> int:
   pp = pprint.PrettyPrinter(indent=1)
   logging.debug('Config: %s', pp.pformat(cfg))
 
-  network = IPv4Network(cfg['network'])
-
-  dynamic_addrs = [
-      IPv4Address(ip, prefixlen=network.prefixlen)
-      for ip in range(int(network[cfg['dynamic']['start']]),
-                      int(network[cfg['dynamic']['end']]) + 1)
-  ]
+  network = Network(cfg)
+  vlans = [Network(vlan) for vlan in cfg.get('vlans', [])]
 
   # Sort it by the int value of the octets
   cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
@@ -191,21 +226,30 @@ def main(args: argparse.Namespace) -> int:
   cfg.update({
     'home_': pathlib.Path.home(),
     'network_': network,
-    'dynamic_': dynamic_addrs,
+    'vlans_': vlans,
   })
 
   settings.configure(DEBUG=True)
   ctx = template.Context(cfg)
   register = template.Library()
-  register.filter('network', lambda vv: (
-    [network[v] for v in vv]
-    if isinstance(vv, list) else
-    network[vv]))
+
+  def resolve_ip(vv, net=None):
+    if net is None:
+      net = network
+    if isinstance(vv, list):
+      return [net[v] for v in vv]
+    return net[vv]
+
+  register.filter('resolve_ip', resolve_ip)
+
+  register.filter('network', resolve_ip)
+  #:w
+  #register.filter('netmask', lambda network: IPv4Network(network).netmask)
   register.filter('format', lambda v, fmt: v.format(fmt))
   register.filter('addr', lambda v, ip: v[ip])
   register.filter('call', lambda v, attr: getattr(v, attr))
   register.filter('append', lambda v, attr: '{0}{1}'.format(v, attr))
-  register.filter('tag', lambda v, tag: any(t == tag for t in v.tags))
+  register.filter('tag', lambda v, tag: tag in v.get('tags', []))
 
   cmds = []
   mkdirs = set()

@@ -1,4 +1,11 @@
-configure{% for host in hosts %}{% if host.ip and host.hardware %}
-set service dhcp-server shared-network-name LAN1 subnet {{ network }} static-mapping {{ host.hostname }} ip-address {{ host.ip|network }}
-set service dhcp-server shared-network-name LAN1 subnet {{ network }} static-mapping {{ host.hostname }} mac-address {{ host.hardware }}{% endif %}{% endfor %}
+configure{% for vlan in vlans_ %}
+set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} default-router {{ vlan.gateway }}
+set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} dns-server {% if "safe" in vlan.tags %}{{ safe_dns|resolve_ip }}{% else %}{{ known_dns|resolve_ip }}{% endif %}
+set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} lease 86400
+set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} start {{ vlan.dynamic_start }} stop {{ vlan.dynamic_end }}
+set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} unifi-controller {{ unifi|network }}{% endfor %}
+delete service dhcp-server shared-network-name {{ dhcp }} subnet {{ network }} static-mapping{% for host in hosts %}{% if host.ip and host.hardware %}
+set service dhcp-server shared-network-name {{ dhcp }} subnet {{ network }} static-mapping {{ host.hostname }} ip-address {{ host.ip|network }}
+set service dhcp-server shared-network-name {{ dhcp }} subnet {{ network }} static-mapping {{ host.hostname }} mac-address {{ host.hardware }}{% endif %}{% endfor %}
 commit
+save
