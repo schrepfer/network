@@ -4,16 +4,16 @@ default-lease-time 600;
 max-lease-time 7200;
 authoritative;
 
-subnet {{ network_|call:"network_address" }} netmask {{ network_|call:"netmask" }} {
-  range {{ dynamic.start|network }} {{ dynamic.end|network }};
+subnet {{ network_.network_address }} netmask {{ network_.netmask }} {
+  range {{ dynamic.start }} {{ dynamic.end }};
   option domain-name "{{ domain }}";
   option domain-name-servers {{ dns|join:", " }};
-  option routers {{ gateway|network }};
-  option broadcast-address {{ network_|call:"broadcast_address" }};
-  option ntp-servers {{ ntp|network|join:", " }};
+  option routers {{ gateway }};
+  option broadcast-address {{ network_.broadcast_address }};
+  option ntp-servers {{ ntp|join:", " }};
 }{% for host in hosts %}{% if host.ip and host.hardware and host.hostname %}
 
 host {{ host.hostname }} {
   hardware ethernet {{ host.hardware }};
-  fixed-address {{ host.ip|network }};
+  fixed-address {{ host.ip }};
 }{% endif %}{% endfor %}

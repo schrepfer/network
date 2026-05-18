@@ -24,7 +24,7 @@ from typing import Any, Optional, Union
 
 
 TEMPLATES = {
-  'etc/bind/db.0.0.0.0.tmpl': 'etc/bind/db.{{ network_|call:"network" }}',
+  'etc/bind/db.0.0.0.0.tmpl': 'etc/bind/db.{{ network_.network }}',
   'etc/bind/db.domain.tmpl': 'etc/bind/db.{{ domain }}',
   'etc/bind/named.conf.local.tmpl': 'etc/bind/named.conf.local',
   'etc/dhcp/dhcpd.conf.tmpl': 'etc/dhcp/dhcpd.conf',
@@ -99,7 +99,7 @@ class Error(Exception):
 
 
 class IPv4Address(ipaddress.IPv4Address):
-  """IPv4Address with or/and operations."""
+  """IPv4Address with custom reverse_pointer."""
 
   def __init__(self, address: Union[int, str], prefixlen: int = 0):
     super().__init__(address)
@@ -119,10 +119,25 @@ class IPv4Address(ipaddress.IPv4Address):
 
 
 class IPv4Network(ipaddress.IPv4Network):
-  """IPv4Network."""
+  """IPv4Network with robust IP resolution."""
 
-  def _address_class(self, address: str) -> IPv4Address:
-    return IPv4Address(address, prefixlen=self.prefixlen)
+  def resolve(self, ip_str: str) -> IPv4Address:
+    if ip_str.startswith('0.'):
+      offset = int(ipaddress.IPv4Address(ip_str))
+      addr = super().__getitem__(offset)
+      return IPv4Address(int(addr), prefixlen=self.prefixlen)
+    else:
+      return IPv4Address(ip_str, prefixlen=self.prefixlen)
+
+  def __getitem__(self, n: Union[int, str, ipaddress.IPv4Address]) -> IPv4Address:
+    if isinstance(n, ipaddress.IPv4Address):
+      if isinstance(n, IPv4Address):
+        return n
+      return IPv4Address(int(n), prefixlen=self.prefixlen)
+    if isinstance(n, str):
+      return self.resolve(n)
+    addr = super().__getitem__(n)
+    return IPv4Address(int(addr), prefixlen=self.prefixlen)
 
   @property
   def reverse_pointer(self) -> str:
@@ -142,29 +157,44 @@ class IPv4Network(ipaddress.IPv4Network):
       octets = octets[:dots]
     return '.'.join(octets)
 
-  def __getitem__(self, n: Union[int, str]) -> ipaddress.IPv4Address:
-    if isinstance(n, str):
-      n = int(self._address_class(n))
-    try:
-      return super().__getitem__(n)
-    except IndexError:
-      return ipaddress.ip_address(n)
-
   @property
   def octets(self) -> tuple[int, ...]:
     return tuple((int(self.network_address) & 0xff << (i*8)) >> i*8 for i in [3, 2, 1, 0])
 
 
 class Network(IPv4Network):
-  """A network configuration."""
+  """A network configuration with fallback support."""
 
-  def __init__(self, cfg: dict[str, Any]):
+  def __init__(self, cfg: dict[str, Any], parent: Optional['Network'] = None):
     super().__init__(cfg['network'])
     self.cfg = cfg
+    self.parent = parent
+
+  def __getattr__(self, name: str) -> Any:
+    try:
+      return self.cfg[name]
+    except KeyError:
+      if self.parent:
+        try:
+          return getattr(self.parent, name)
+        except AttributeError:
+          pass
+      raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+  def get(self, name: str, default: Any = None) -> Any:
+    try:
+      return getattr(self, name)
+    except AttributeError:
+      return default
+
+  # Properties with fallback support (raise AttributeError on missing key)
 
   @property
   def gateway(self) -> IPv4Address:
-    return self[self.cfg['gateway']]
+    try:
+      return self[self.cfg['gateway']]
+    except KeyError:
+      raise AttributeError("gateway")
 
   @property
   def tags(self) -> list[str]:
@@ -172,11 +202,17 @@ class Network(IPv4Network):
 
   @property
   def dynamic_start(self) -> IPv4Address:
-    return self[self.cfg['dynamic']['start']]
+    try:
+      return self[self.cfg['dynamic']['start']]
+    except KeyError:
+      raise AttributeError("dynamic_start")
 
   @property
   def dynamic_end(self) -> IPv4Address:
-    return self[self.cfg['dynamic']['end']]
+    try:
+      return self[self.cfg['dynamic']['end']]
+    except KeyError:
+      raise AttributeError("dynamic_end")
 
   @property
   def dynamic_range(self) -> list[IPv4Address]:
@@ -185,14 +221,54 @@ class Network(IPv4Network):
         for ip in range(int(self.dynamic_start), int(self.dynamic_end) + 1)
     ]
 
-  def __getattr__(self, name: str) -> Any:
+  @property
+  def safe_dns(self) -> IPv4Address:
     try:
-      return self.cfg[name]
+      return self[self.cfg['safe_dns']]
     except KeyError:
-      raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+      raise AttributeError("safe_dns")
 
-  def get(self, name: str, default: Any = None) -> Any:
-    return self.cfg.get(name, default)
+  @property
+  def known_dns(self) -> IPv4Address:
+    try:
+      return self[self.cfg['known_dns']]
+    except KeyError:
+      raise AttributeError("known_dns")
+
+  @property
+  def unifi(self) -> IPv4Address:
+    try:
+      return self[self.cfg['unifi']]
+    except KeyError:
+      raise AttributeError("unifi")
+
+  @property
+  def ns(self) -> IPv4Address:
+    try:
+      return self[self.cfg['ns']]
+    except KeyError:
+      raise AttributeError("ns")
+
+  @property
+  def mail(self) -> IPv4Address:
+    try:
+      return self[self.cfg['mail']]
+    except KeyError:
+      raise AttributeError("mail")
+
+  @property
+  def dns_servers(self) -> list[IPv4Address]:
+    try:
+      return [self[ip] for ip in self.cfg['dns_servers']]
+    except KeyError:
+      raise AttributeError("dns_servers")
+
+  @property
+  def ntp(self) -> list[IPv4Address]:
+    try:
+      return [self[ip] for ip in self.cfg['ntp']]
+    except KeyError:
+      raise AttributeError("ntp")
 
 
 def check_flags(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
@@ -218,10 +294,34 @@ def main(args: argparse.Namespace) -> int:
   logging.debug('Config: %s', pp.pformat(cfg))
 
   network = Network(cfg)
-  vlans = [Network(vlan) for vlan in cfg.get('vlans', [])]
+  vlans = [Network(vlan, parent=network) for vlan in cfg.get('vlans', [])]
 
-  # Sort it by the int value of the octets
-  cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: tuple(map(int, x.get('ip').split('.'))))
+  # Pre-resolve config IPs relative to core network
+  cfg['gateway'] = network.gateway
+  if 'ns' in cfg:
+    cfg['ns'] = network.ns
+  if 'mail' in cfg:
+    cfg['mail'] = network.mail
+  if 'known_dns' in cfg:
+    cfg['known_dns'] = network.known_dns
+  if 'safe_dns' in cfg:
+    cfg['safe_dns'] = network.safe_dns
+  if 'unifi' in cfg:
+    cfg['unifi'] = network.unifi
+  if 'dns_servers' in cfg:
+    cfg['dns_servers'] = network.dns_servers
+  if 'ntp' in cfg:
+    cfg['ntp'] = network.ntp
+  if 'dynamic' in cfg:
+    cfg['dynamic']['start'] = network.dynamic_start
+    cfg['dynamic']['end'] = network.dynamic_end
+
+  for host in cfg['hosts']:
+    if 'ip' in host:
+      host['ip'] = network[host['ip']]
+
+  # Sort it by the IPv4Address value
+  cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: x.get('ip'))
 
   cfg.update({
     'home_': pathlib.Path.home(),
@@ -233,23 +333,7 @@ def main(args: argparse.Namespace) -> int:
   ctx = template.Context(cfg)
   register = template.Library()
 
-  def resolve_ip(vv, net=None):
-    if net is None:
-      net = network
-    if isinstance(vv, list):
-      return [net[v] for v in vv]
-    return net[vv]
-
-  register.filter('resolve_ip', resolve_ip)
-
-  register.filter('network', resolve_ip)
-  #:w
-  #register.filter('netmask', lambda network: IPv4Network(network).netmask)
   register.filter('format', lambda v, fmt: v.format(fmt))
-  register.filter('addr', lambda v, ip: v[ip])
-  register.filter('call', lambda v, attr: getattr(v, attr))
-  register.filter('append', lambda v, attr: '{0}{1}'.format(v, attr))
-  register.filter('tag', lambda v, tag: tag in v.get('tags', []))
 
   cmds = []
   mkdirs = set()

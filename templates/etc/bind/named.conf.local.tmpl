@@ -9,9 +9,9 @@ zone "{{ domain }}" {
   notify no;
 };
 
-zone "{{ network_|call:"reverse_pointer" }}" {
+zone "{{ network_.reverse_pointer }}" {
   type master;
-  file "/etc/bind/db.{{ network_|call:"network" }}";
+  file "/etc/bind/db.{{ network_.network }}";
   allow-update { none; };
   notify no;
 };
