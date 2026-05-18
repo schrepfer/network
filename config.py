@@ -48,18 +48,34 @@ class Format:
     except Exception as e:
       raise schema.SchemaError(None, str(e))
     return data
-  
+
+
+class Name:
+  def validate(self, data, **kwargs):
+    return schema.And(
+      str,
+      schema.Regex(r'^[A-Za-z][A-Za-z0-9_]+$', error='Must start with a letter and contain only alphanumeric/underscore'),
+    ).validate(data, **kwargs)
+
+
+class Hostname:
+  def validate(self, data, **kwargs):
+    return schema.And(
+      str,
+      schema.Regex(r'^[a-z]([a-z0-9-]*[a-z0-9])?$', error='Must be RFC 1123 compliant hostname (lowercase)'),
+    ).validate(data, **kwargs)
+
 
 SCHEMA = schema.Schema(
   {
     'domain': str,
+    'name': Name(),
     'gateway': IPAddress(),
     'network': Network(),
     'ntp': [IPAddress()],
     'unifi': IPAddress(),
     'safe_dns': IPAddress(),
     'known_dns': IPAddress(),
-    'dhcp': str,
     'dns_servers': [IPAddress()],
     'ns': IPAddress(),
     'mail': IPAddress(),
@@ -70,7 +86,7 @@ SCHEMA = schema.Schema(
     },
     'vlans': [
       {
-        'name': str,
+        'name': Name(),
         'gateway': IPAddress(),
         'network': Network(),
         'dynamic': {
@@ -86,9 +102,9 @@ SCHEMA = schema.Schema(
       {
         schema.Optional('hardware'): HardwareAddress(),
         'ip': IPAddress(),
-        'hostname': str,
+        'hostname': Hostname(),
         schema.Optional('tags'): [str],
-        schema.Optional('aliases'): [str],
+        schema.Optional('aliases'): [Hostname()],
         schema.Optional('ports'): [
           {
             'name': str,
