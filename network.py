@@ -323,6 +323,15 @@ def main(args: argparse.Namespace) -> int:
   # Sort it by the IPv4Address value
   cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: x.get('ip'))
 
+  # Pre-resolve and sort VLAN hosts
+  for vlan_obj in vlans:
+    vlan_cfg = vlan_obj.cfg
+    if 'hosts' in vlan_cfg:
+      for host in vlan_cfg['hosts']:
+        if 'ip' in host:
+          host['ip'] = vlan_obj[host['ip']]
+      vlan_cfg['hosts'] = sorted(vlan_cfg['hosts'], key=lambda x: x.get('ip'))
+
   cfg.update({
     'home_': pathlib.Path.home(),
     'network_': network,

@@ -16,4 +16,11 @@ subnet {{ network_.network_address }} netmask {{ network_.netmask }} {
 host {{ host.hostname }} {
   hardware ethernet {{ host.hardware }};
   fixed-address {{ host.ip }};
-}{% endif %}{% endfor %}
+}{% endif %}{% endfor %}{% for vlan in vlans_ %}{% if vlan.cfg.hosts %}
+
+# {{ vlan.name }}{% for host in vlan.cfg.hosts %}{% if host.ip and host.hardware and host.hostname %}
+
+host {{ host.hostname }} {
+  hardware ethernet {{ host.hardware }};
+  fixed-address {{ host.ip }};
+}{% endif %}{% endfor %}{% endif %}{% endfor %}

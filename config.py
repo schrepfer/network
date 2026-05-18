@@ -66,6 +66,22 @@ class Hostname:
     ).validate(data, **kwargs)
 
 
+HOST_SCHEMA = {
+  schema.Optional('hardware'): HardwareAddress(),
+  'ip': IPAddress(),
+  'hostname': Hostname(),
+  schema.Optional('tags'): [str],
+  schema.Optional('aliases'): [Hostname()],
+  schema.Optional('ports'): [
+    {
+      'name': str,
+      'port': int,
+    },
+  ],
+  schema.Optional('description'): str
+}
+
+
 SCHEMA = schema.Schema(
   {
     'domain': str,
@@ -96,24 +112,10 @@ SCHEMA = schema.Schema(
         },
         schema.Optional('description'): str,
         schema.Optional('tags'): [str],
+        schema.Optional('hosts'): [HOST_SCHEMA],
       },
     ],
-    'hosts': [
-      {
-        schema.Optional('hardware'): HardwareAddress(),
-        'ip': IPAddress(),
-        'hostname': Hostname(),
-        schema.Optional('tags'): [str],
-        schema.Optional('aliases'): [Hostname()],
-        schema.Optional('ports'): [
-          {
-            'name': str,
-            'port': int,
-          },
-        ],
-        schema.Optional('description'): str
-      }
-    ],
+    'hosts': [HOST_SCHEMA],
   },
 )
 
@@ -123,39 +125,46 @@ class ConfigError(Exception):
 
 
 def validate(cfg: Any) -> Any:
-  hostnames = set()
-  hardwares = set()
-  ips = set()
+  global_hostnames = set()
+  global_hardwares = set()
   errors = []
 
-  for i, host in enumerate(cfg['hosts']):
-    if hostname := host.get('hostname'):
-      if hostname in hostnames:
-        errors.append(f'hosts[{i:d}].hostname {hostname!r} already used')
-      else:
-        hostnames.add(hostname)
-    if aliases := host.get('aliases'):
-      for j, alias in enumerate(host['aliases']):
-        if alias in hostnames:
-          errors.append(f'hosts[{i:d}].aliases[{j:d}] {alias!r} already used')
+  def validate_host_list(hosts: list[Any], path_prefix: str) -> None:
+    local_ips = set()
+    for i, host in enumerate(hosts):
+      if hostname := host.get('hostname'):
+        if hostname in global_hostnames:
+          errors.append(f'{path_prefix}[{i:d}].hostname {hostname!r} already used')
         else:
-          hostnames.add(alias)
-    else:
-      host['aliases'] = []
-    if hardware := host.get('hardware'):
-      if hardware in hardwares:
-        errors.append(f'hosts[{i:d}].hardware {hardware!r} already used')
+          global_hostnames.add(hostname)
+      if aliases := host.get('aliases'):
+        for j, alias in enumerate(host['aliases']):
+          if alias in global_hostnames:
+            errors.append(f'{path_prefix}[{i:d}].aliases[{j:d}] {alias!r} already used')
+          else:
+            global_hostnames.add(alias)
       else:
-        hardwares.add(hardware)
-    else:
-      host['hardware'] = None
-    if ip := host.get('ip'):
-      if ip in ips:
-        errors.append(f'hosts[{i:d}].ip {ip!r} already used')
+        host['aliases'] = []
+      if hardware := host.get('hardware'):
+        if hardware in global_hardwares:
+          errors.append(f'{path_prefix}[{i:d}].hardware {hardware!r} already used')
+        else:
+          global_hardwares.add(hardware)
       else:
-        ips.add(ip)
-    if 'description' not in host:
-      host['description'] = None
+        host['hardware'] = None
+      if ip := host.get('ip'):
+        if ip in local_ips:
+          errors.append(f'{path_prefix}[{i:d}].ip {ip!r} already used in this network segment')
+        else:
+          local_ips.add(ip)
+      if 'description' not in host:
+        host['description'] = None
+
+  validate_host_list(cfg.get('hosts', []), 'hosts')
+
+  for v, vlan in enumerate(cfg.get('vlans', [])):
+    if 'hosts' in vlan:
+      validate_host_list(vlan['hosts'], f'vlans[{v:d}].hosts')
 
   if errors:
     raise ConfigError('Errors:\n\t' + ('\n\t'.join(errors)))
