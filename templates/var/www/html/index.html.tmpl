@@ -5,6 +5,7 @@
 </head>
 <body>
 <h1>Network <b>{{ domain }}</b></h1>
+<h2>{{ name|default:"Main Network" }}</h2>
 <table>
 <tr>
   <th>hostname</th>
@@ -21,7 +22,19 @@
   <td>{% if host.description %}{{ host.description }}{% endif %}</td>
   <td>{% for alias in host.aliases %}{% if not forloop.first %}, {% endif %}<a href="http://{{ alias }}.{{ domain }}">{{ alias }}</a>{% endfor %}</td>
 </tr>
-{% endif %}{% endif %}{% endfor %}{% for vlan in vlans %}{% if vlan.cfg.hosts %}
+{% endif %}{% endif %}{% endfor %}
+</table>
+
+{% for vlan in vlans %}{% if vlan.cfg.hosts %}
+<h2>{{ vlan.name }}{% if vlan.description %} - {{ vlan.description }}{% endif %}</h2>
+<table>
+<tr>
+  <th>hostname</th>
+  <th>ip</th>
+  <th>hardware</th>
+  <th>description</th>
+  <th>aliases</th>
+</tr>
 {% for host in vlan.cfg.hosts %}{% if host.ip %}{% if not host.tags or "hidden" not in host.tags %}
 <tr>
   <td><a href="http://{{ host.hostname }}.{{ domain }}">{{ host.hostname }}</a></td>
@@ -30,7 +43,8 @@
   <td>{% if host.description %}{{ host.description }}{% endif %}</td>
   <td>{% for alias in host.aliases %}{% if not forloop.first %}, {% endif %}<a href="http://{{ alias }}.{{ domain }}">{{ alias }}</a>{% endfor %}</td>
 </tr>
-{% endif %}{% endif %}{% endfor %}{% endif %}{% endfor %}
+{% endif %}{% endif %}{% endfor %}
 </table>
+{% endif %}{% endfor %}
 </body>
 </html>
