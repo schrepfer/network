@@ -290,21 +290,9 @@ def preprocess_template(content: str) -> str:
   return content
 
 
-def main(args: argparse.Namespace) -> int:
-  if not args.config:
-    return 1
-
-  if not args.templates:
-    return 1
-
-  if not args.root:
-    return 1
-
-  cfg = config.load_yaml(args.config)
+def prepare_context(cfg: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+  cfg = dict(cfg)
   cfg['time'] = args.time
-
-  pp = pprint.PrettyPrinter(indent=1)
-  logging.debug('Config: %s', pp.pformat(cfg))
 
   network = Network(cfg)
   vlans = [Network(vlan, parent=network) for vlan in cfg.get('vlans', [])]
@@ -350,53 +338,84 @@ def main(args: argparse.Namespace) -> int:
     'network': network,
     'vlans': vlans,
   })
+  return cfg
+
+
+def render_template(template_content: str, context: dict[str, Any], register: template.Library) -> str:
+  engine = template.Engine()
+  engine.template_builtins.append(register)
+  return engine.from_string(preprocess_template(template_content)).render(template.Context(context))
+
+
+def generate_outputs(args: argparse.Namespace, context: dict[str, Any], register: template.Library) -> dict[str, tuple[str, str]]:
+  outputs = {}
+  for tmpl, f in TEMPLATES.items():
+    with open(os.path.join(args.templates, tmpl), 'r') as tf:
+      body = render_template(tf.read(), context, register)
+      engine = template.Engine()
+      engine.template_builtins.append(register)
+      output_base = engine.from_string(f).render(template.Context(context))
+      outputs[tmpl] = (output_base, body)
+  return outputs
+
+
+def main(args: argparse.Namespace) -> int:
+  if not args.config:
+    return 1
+
+  if not args.templates:
+    return 1
+
+  if not args.root:
+    return 1
+
+  raw_cfg = config.load_yaml(args.config)
+  pp = pprint.PrettyPrinter(indent=1)
+  logging.debug('Config: %s', pp.pformat(raw_cfg))
+
+  cfg = prepare_context(raw_cfg, args)
 
   settings.configure(DEBUG=True)
-  ctx = template.Context(cfg)
   register = template.Library()
-
   register.filter('format', lambda v, fmt: v.format(fmt))
+
+  outputs = generate_outputs(args, cfg, register)
 
   cmds = []
   mkdirs = set()
   num_diffs = 0
 
-  for tmpl, f in TEMPLATES.items():
-    with open(os.path.join(args.templates, tmpl), 'r') as tf:
-      engine = template.Engine()
-      engine.template_builtins.append(register)
-      body = engine.from_string(preprocess_template(tf.read())).render(ctx)
-      output_base = engine.from_string(f).render(ctx)
-      output = os.path.join(args.temp, output_base)
-      final_output = os.path.join(args.root, output_base)
-      if args.print:
-        print('::::::::::::::')
-        print(output)
-        print('::::::::::::::')
-        print(body)
-      elif args.diff:
-        if not os.path.isfile(final_output):
-          logging.info('Output file does not exist: %s', final_output)
-        else:
-          with open(final_output, 'r') as of:
-            if diffs := list(difflib.unified_diff(
-                of.read().split('\n'),
-                body.split('\n'),
-                fromfile=final_output,
-                tofile=tmpl)):
-              print('\n'.join(diffs))
-              num_diffs += 1
+  for tmpl, (output_base, body) in outputs.items():
+    output = os.path.join(args.temp, output_base)
+    final_output = os.path.join(args.root, output_base)
+    if args.print:
+      print('::::::::::::::')
+      print(output)
+      print('::::::::::::::')
+      print(body)
+    elif args.diff:
+      if not os.path.isfile(final_output):
+        logging.info('Output file does not exist: %s', final_output)
       else:
-        os.makedirs(os.path.dirname(output), exist_ok=True)
-        with open(output, 'w') as of:
-          output_dir = os.path.join(args.root, os.path.dirname(output_base))
-          if output_dir not in mkdirs:
-            mkdir = f'sudo mkdir -p {output_dir}'
-            cmds.append(mkdir)
-            mkdirs.add(output_dir)
-          install = f'sudo install -v -m 644 -o root -g root -t {output_dir} {output}'
-          cmds.append(install)
-          of.write(body)
+        with open(final_output, 'r') as of:
+          if diffs := list(difflib.unified_diff(
+              of.read().split('\n'),
+              body.split('\n'),
+              fromfile=final_output,
+              tofile=tmpl)):
+            print('\n'.join(diffs))
+            num_diffs += 1
+    else:
+      os.makedirs(os.path.dirname(output), exist_ok=True)
+      with open(output, 'w') as of:
+        output_dir = os.path.join(args.root, os.path.dirname(output_base))
+        if output_dir not in mkdirs:
+          mkdir = f'sudo mkdir -p {output_dir}'
+          cmds.append(mkdir)
+          mkdirs.add(output_dir)
+        install = f'sudo install -v -m 644 -o root -g root -t {output_dir} {output}'
+        cmds.append(install)
+        of.write(body)
 
   if cmds:
     logging.info('Install cmds:\n' + ' \\\n  && '.join(cmds))
