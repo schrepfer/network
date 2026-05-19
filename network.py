@@ -300,7 +300,6 @@ def main(args: argparse.Namespace) -> int:
   if not args.root:
     return 1
 
-  tmp = args.temp
   cfg = config.load_yaml(args.config)
   cfg['time'] = args.time
 
@@ -368,7 +367,7 @@ def main(args: argparse.Namespace) -> int:
       engine.template_builtins.append(register)
       body = engine.from_string(preprocess_template(tf.read())).render(ctx)
       output_base = engine.from_string(f).render(ctx)
-      output = os.path.join(tmp, output_base)
+      output = os.path.join(args.temp, output_base)
       final_output = os.path.join(args.root, output_base)
       if args.print:
         print('::::::::::::::')
