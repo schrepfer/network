@@ -1,4 +1,4 @@
-configure{% for vlan in vlans_ %}
+configure{% for vlan in vlans %}
 set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} default-router {{ vlan.gateway }}
 set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} dns-server {% if "safe" in vlan.tags %}{{ safe_dns }}{% else %}{{ known_dns }}{% endif %}
 set service dhcp-server shared-network-name {{ vlan.name }} subnet {{ vlan.cfg.network }} lease 86400

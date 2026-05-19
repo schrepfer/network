@@ -9,5 +9,5 @@ $TTL 1W
 @                                IN NS      ns.{{ domain }}.
 ; Hosts{% for host in hosts %}{% if host.ip %}
 {{ host.ip.reverse_pointer|stringformat:"-32s" }} IN PTR     {{ host.hostname }}.{{ domain }}.{% endif %}{% endfor %}
-; Dynamic hosts{% for n in dynamic_ %}
+; Dynamic hosts{% for n in network.dynamic_range %}
 {{ n.reverse_pointer|stringformat:"-32s" }} IN PTR     {{ dynamic.format|format:forloop.counter0 }}.{{ domain }}.{% endfor %}

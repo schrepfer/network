@@ -24,7 +24,7 @@ from typing import Any, Optional, Union
 
 
 TEMPLATES = {
-  'etc/bind/db.0.0.0.0.tmpl': 'etc/bind/db.{{ network_.network }}',
+  'etc/bind/db.0.0.0.0.tmpl': 'etc/bind/db.{{ network.network }}',
   'etc/bind/db.domain.tmpl': 'etc/bind/db.{{ domain }}',
   'etc/bind/named.conf.local.tmpl': 'etc/bind/named.conf.local',
   'etc/dhcp/dhcpd.conf.tmpl': 'etc/dhcp/dhcpd.conf',
@@ -324,18 +324,18 @@ def main(args: argparse.Namespace) -> int:
   cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: x.get('ip'))
 
   # Pre-resolve and sort VLAN hosts
-  for vlan_obj in vlans:
-    vlan_cfg = vlan_obj.cfg
+  for vlan in vlans:
+    vlan_cfg = vlan.cfg
     if 'hosts' in vlan_cfg:
       for host in vlan_cfg['hosts']:
         if 'ip' in host:
-          host['ip'] = vlan_obj[host['ip']]
+          host['ip'] = vlan[host['ip']]
       vlan_cfg['hosts'] = sorted(vlan_cfg['hosts'], key=lambda x: x.get('ip'))
 
   cfg.update({
-    'home_': pathlib.Path.home(),
-    'network_': network,
-    'vlans_': vlans,
+    'home': pathlib.Path.home(),
+    'network': network,
+    'vlans': vlans,
   })
 
   settings.configure(DEBUG=True)
@@ -357,7 +357,7 @@ def main(args: argparse.Namespace) -> int:
       output = os.path.join(tmp, output_base)
       final_output = os.path.join(args.root, output_base)
       if args.print:
-          print('{0}:\n{1}\n'.format(output, body))
+        print('{0}:\n{1}\n'.format(output, body))
       elif args.diff:
         if not os.path.isfile(final_output):
           logging.info('Output file does not exist: %s', final_output)

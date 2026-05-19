@@ -1,10 +1,10 @@
 [Unit]
 Description=ONT Reboot Service
-ConditionPathExists={{ home_ }}/ont-reboot/ont-reboot.py
+ConditionPathExists={{ home }}/ont-reboot/ont-reboot.py
 After=network.target
 
 [Service]
-ExecStart=python3 {{ home_ }}/ont-reboot/ont-reboot.py
+ExecStart=python3 {{ home }}/ont-reboot/ont-reboot.py
 
 [Install]
 WantedBy=multi-user.target
