@@ -56,6 +56,12 @@ def define_flags() -> argparse.Namespace:
       help='the output root; where the files end up',
       metavar='DIR')
   parser.add_argument(
+      '--temp',
+      type=str,
+      default='/tmp/network-%d' % os.getuid(),
+      help='the staging directory used for configurations',
+      metavar='DIR')
+  parser.add_argument(
       '--time', '-s',
       type=int,
       default=int(time.time()),
@@ -276,6 +282,14 @@ def check_flags(parser: argparse.ArgumentParser, args: argparse.Namespace) -> No
   return None
 
 
+def preprocess_template(content: str) -> str:
+  # Left strip: remove whitespace before {%- and {{-
+  content = re.sub(r'\s*({[{%])-', r'\1', content)
+  # Right strip: remove whitespace after -%} and -}}
+  content = re.sub(r'-([}%])}\s*', r'\1}', content)
+  return content
+
+
 def main(args: argparse.Namespace) -> int:
   if not args.config:
     return 1
@@ -286,7 +300,7 @@ def main(args: argparse.Namespace) -> int:
   if not args.root:
     return 1
 
-  tmp = '/tmp/network-%d' % os.getuid()
+  tmp = args.temp
   cfg = config.load_yaml(args.config)
   cfg['time'] = args.time
 
@@ -352,7 +366,7 @@ def main(args: argparse.Namespace) -> int:
     with open(os.path.join(args.templates, tmpl), 'r') as tf:
       engine = template.Engine()
       engine.template_builtins.append(register)
-      body = engine.from_string(tf.read()).render(ctx)
+      body = engine.from_string(preprocess_template(tf.read())).render(ctx)
       output_base = engine.from_string(f).render(ctx)
       output = os.path.join(tmp, output_base)
       final_output = os.path.join(args.root, output_base)

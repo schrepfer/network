@@ -15,22 +15,35 @@ mail             IN A          {{ mail }}
 ;
 ; {{ name }}
 ;
-{% for host in hosts %}{% if host.ip %}
-{{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}{% for alias in host.aliases %}
-{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}
+{% for host in hosts -%}
+  {%- if host.ip -%}
+{{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}
+{% for alias in host.aliases -%}
+{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}
+{% endfor %}
+  {%- endif %}
+{%- endfor %}
 
 ; {{ network.dynamic.format }} ({{ network.dynamic_start }} - {{ network.dynamic_end }})
-{% for n in network.dynamic_range %}
-{{ network.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}{% for vlan in vlans %}
+{% for n in network.dynamic_range -%}
+{{ network.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}
+{% endfor %}
+{%- for vlan in vlans %}
 
 ;
 ; {{ vlan.name }}
 ;
-{% for host in vlan.cfg.hosts %}{% if host.ip %}
-{{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}{% for alias in host.aliases %}
-{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}
+{% for host in vlan.cfg.hosts -%}
+  {%- if host.ip -%}
+{{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}
+{% for alias in host.aliases -%}
+{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}
+{% endfor %}
+  {%- endif %}
+{%- endfor %}
 
 ; {{ vlan.dynamic.format }} ({{ vlan.dynamic_start }} - {{ vlan.dynamic_end }})
-{% for n in vlan.dynamic_range %}
-{{ vlan.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}
+{% for n in vlan.dynamic_range -%}
+{{ vlan.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}
 {% endfor %}
+{%- endfor %}

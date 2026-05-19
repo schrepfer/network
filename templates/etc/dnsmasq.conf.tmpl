@@ -48,8 +48,20 @@ mx-host={{ domain }},mail.{{ domain }},10
 address=/mail.{{ domain }}/{{ mail }}
 address=/ns.{{ domain }}/{{ ns }}
 
-# {{ name }}{% for host in hosts %}{% if host.ip and host.hardware %}
-dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ host.ip }},24h{% endif %}{% endfor %}{% for vlan in vlans %}{% if vlan.cfg.hosts %}
+# {{ name }}
+{% for host in hosts -%}
+  {%- if host.ip and host.hardware -%}
+dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ host.ip }},24h
+{% endif %}
+{%- endfor %}
+{%- for vlan in vlans %}
+  {%- if vlan.cfg.hosts %}
 
-# {{ vlan.name }}{% for host in vlan.cfg.hosts %}{% if host.ip and host.hardware %}
-dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ host.ip }},24h{% endif %}{% endfor %}{% endif %}{% endfor %}
+# {{ vlan.name }}
+{% for host in vlan.cfg.hosts -%}
+  {%- if host.ip and host.hardware -%}
+dhcp-host={{ host.hardware }},{% for tag in host.tags %}set:{{ tag }},{% endfor %}{{ host.ip }},24h
+{% endif %}
+{%- endfor %}
+  {%- endif %}
+{%- endfor %}

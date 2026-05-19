@@ -1,4 +1,3 @@
-
 ddns-update-style none;
 default-lease-time 600;
 max-lease-time 7200;
@@ -16,31 +15,40 @@ subnet {{ network.network_address }} netmask {{ network.netmask }} {
   option broadcast-address {{ network.broadcast_address }};
   option ntp-servers {{ ntp|join:", " }};
 }
+{% for host in hosts -%}
+  {%- if host.ip and host.hardware and host.hostname %}
 
-{% for host in hosts %}{% if host.ip and host.hardware and host.hostname %}
 host {{ host.hostname }} {
   hardware ethernet {{ host.hardware }};
   fixed-address {{ host.ip }};
 }
-{% endif %}{% endfor %}
+  {%- endif %}
+{%- endfor %}
 {% for vlan in vlans %}
+
 #
 # {{ vlan.name }}
 #
 
 subnet {{ vlan.network_address }} netmask {{ vlan.netmask }} {
-  {% if vlan.dynamic %}range {{ vlan.dynamic_start }} {{ vlan.dynamic_end }};{% endif %}
+  {%- if vlan.dynamic %}
+  range {{ vlan.dynamic_start }} {{ vlan.dynamic_end }};
+  {%- endif %}
   option domain-name "{{ domain }}";
   option domain-name-servers {{ dns|join:", " }};
   option routers {{ vlan.gateway }};
   option broadcast-address {{ vlan.broadcast_address }};
-  {% if vlan.ntp %}option ntp-servers {{ vlan.ntp|join:", " }};{% endif %}
+  {%- if vlan.ntp %}
+  option ntp-servers {{ vlan.ntp|join:", " }};
+  {%- endif %}
 }
+  {%- for host in vlan.cfg.hosts -%}
+    {%- if host.ip and host.hardware and host.hostname %}
 
-{% for host in vlan.cfg.hosts %}{% if host.ip and host.hardware and host.hostname %}
 host {{ host.hostname }} {
   hardware ethernet {{ host.hardware }};
   fixed-address {{ host.ip }};
 }
-{% endif %}{% endfor %}
+    {%- endif %}
+  {%- endfor %}
 {% endfor %}
