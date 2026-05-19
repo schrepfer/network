@@ -357,7 +357,10 @@ def main(args: argparse.Namespace) -> int:
       output = os.path.join(tmp, output_base)
       final_output = os.path.join(args.root, output_base)
       if args.print:
-        print('{0}:\n{1}\n'.format(output, body))
+        print('::::::::::::::')
+        print(output)
+        print('::::::::::::::')
+        print(body)
       elif args.diff:
         if not os.path.isfile(final_output):
           logging.info('Output file does not exist: %s', final_output)
