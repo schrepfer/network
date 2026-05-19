@@ -24,8 +24,8 @@ dhcp-option=option:router,{{ gateway }}
 dhcp-option=option:domain-name,{{ domain }}
 dhcp-option=option:domain-search,{{ domain }}
 dhcp-option=option:ntp-server,{{ ntp|join:"," }}
-dhcp-option=tag:known,tag:!safe,option:dns-server,{{ known_dns }}
-dhcp-option=option:dns-server,{{ safe_dns }}
+dhcp-option=tag:safe,option:dns-server,{{ safe_dns }}
+dhcp-option=option:dns-server,{{ known_dns }}
 {% for vlan in vlans %}
 # {{ vlan.name }}: {{ vlan.description }}
 dhcp-range=set:{{ vlan.name|lower }},{{ vlan.dynamic_start }},{{ vlan.dynamic_end }},{{ vlan.netmask }},24h
@@ -33,6 +33,7 @@ dhcp-option=tag:{{ vlan.name|lower }},option:router,{{ vlan.gateway }}
 dhcp-option=tag:{{ vlan.name|lower }},option:dns-server,{% if "safe" in vlan.tags %}{{ safe_dns }}{% else %}{{ known_dns }}{% endif %}
 dhcp-option=tag:{{ vlan.name|lower }},option:domain-name,{{ domain }}
 dhcp-option=tag:{{ vlan.name|lower }},option:domain-search,{{ domain }}
+dhcp-option=tag:{{ vlan.name|lower }},option:ntp-server,{{ ntp|join:"," }}
 {% endfor %}
 dhcp-authoritative
 no-dhcp-interface=wlan0
