@@ -11,11 +11,22 @@ $TTL 1W
 @                IN A          {{ gateway }}
 ns               IN A          {{ ns }}
 mail             IN A          {{ mail }}
-; Hosts{% for host in hosts %}{% if host.ip %}
+; Main Network Static
+{% for host in hosts %}{% if host.ip %}
 {{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}{% for alias in host.aliases %}
-{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}{% for vlan in vlans %}{% if vlan.cfg.hosts %}
-; {{ vlan.name }} hosts{% for host in vlan.cfg.hosts %}{% if host.ip %}
+{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}
+
+; Main Network Dynamic
+{% for n in network.dynamic_range %}
+{{ network.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}
+
+{% for vlan in vlans %}
+; {{ vlan.name }} Static
+{% for host in vlan.cfg.hosts %}{% if host.ip %}
 {{ host.hostname|stringformat:"-24s" }} IN A          {{ host.ip }}{% for alias in host.aliases %}
-{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}{% endif %}{% endfor %}
-; Dynamic hosts{% for n in network.dynamic_range %}
-{{ dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}
+{{ alias|stringformat:"-24s" }} IN CNAME      {{ host.hostname }}{% endfor %}{% endif %}{% endfor %}
+
+; {{ vlan.name }} Dynamic
+{% for n in vlan.dynamic_range %}
+{{ vlan.dynamic.format|format:forloop.counter0|stringformat:"-24s" }} IN A          {{ n }}{% endfor %}
+{% endfor %}
