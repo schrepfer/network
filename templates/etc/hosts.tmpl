@@ -10,28 +10,26 @@
 {%- endfor %}
 
 # {{ network.dynamic.format }} ({{ network.dynamic_start }} - {{ network.dynamic_end }})
+
 {% for n in network.dynamic_range -%}
 {{ n }} {{ dynamic.format|format:forloop.counter0 }}
 {% endfor %}
-{%- for vlan in vlans -%}
-  {%- if vlan.cfg.hosts %}
-
+{%- for vlan in vlans %}
 #
 # {{ vlan.name }}
 #
-    {%- for host in vlan.cfg.hosts -%}
-      {%- if host.ip %}
+
+{% for host in vlan.cfg.hosts -%}
+  {%- if host.ip -%}
 {{ host.ip }} {{ host.hostname }}.{{ domain }} {{ host.hostname }}{% for alias in host.aliases %} {{ alias }}{% endfor %}
-      {%- endif %}
-    {%- endfor %}
   {%- endif %}
-
+{% endfor %}
 # {{ vlan.dynamic.format }} ({{ vlan.dynamic_start }} - {{ vlan.dynamic_end }})
-  {%- for n in vlan.dynamic_range %}
-{{ n }} {{ vlan.dynamic.format|format:forloop.counter0 }}
-  {%- endfor %}
-{%- endfor %}
 
+{% for n in vlan.dynamic_range -%}
+{{ n }} {{ vlan.dynamic.format|format:forloop.counter0 }}
+{% endfor %}
+{%- endfor %}
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
