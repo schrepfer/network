@@ -5,7 +5,6 @@
 </head>
 <body>
 <h1>Network <b>{{ domain }}</b></h1>
-<h2>{{ name|default:"Main Network" }}</h2>
 <table>
 <tr>
   <th>hostname</th>
@@ -26,7 +25,7 @@
 </table>
 
 {% for vlan in vlans %}{% if vlan.cfg.hosts %}
-<h2>{{ vlan.name }}{% if vlan.description %} - {{ vlan.description }}{% endif %}</h2>
+<h1>{{ vlan.name }}{% if vlan.description %} - {{ vlan.description }}{% endif %}</h1>
 <table>
 <tr>
   <th>hostname</th>
