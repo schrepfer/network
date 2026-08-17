@@ -317,21 +317,34 @@ def prepare_context(cfg: dict[str, Any], args: argparse.Namespace) -> dict[str, 
     cfg['dynamic']['start'] = network.dynamic_start
     cfg['dynamic']['end'] = network.dynamic_end
 
-  for host in cfg['hosts']:
-    if 'ip' in host:
-      host['ip'] = network[host['ip']]
+  hosts = cfg['hosts']
+  for host in hosts[:]:
+    host['ip'] = network[host['ip']]
+    for extra in host.get('extra', []):
+      extra_host = host.copy()
+      extra_host['hostname'] = '{0}-{1}'.format(host["hostname"], extra["name"])
+      extra_host['hardware'] = extra['hardware']
+      extra_host['ip'] = network[extra['ip']]
+      extra_host['aliases'] = ['{0}-{1}'.format(a, extra['name']) for a in host['aliases']]
+      hosts.append(extra_host)
 
   # Sort it by the IPv4Address value
-  cfg['hosts'] = sorted(cfg['hosts'], key=lambda x: x.get('ip'))
+  cfg['hosts'] = sorted(hosts, key=lambda x: x.get('ip'))
 
   # Pre-resolve and sort VLAN hosts
   for vlan in vlans:
     vlan_cfg = vlan.cfg
-    if 'hosts' in vlan_cfg:
-      for host in vlan_cfg['hosts']:
-        if 'ip' in host:
-          host['ip'] = vlan[host['ip']]
-      vlan_cfg['hosts'] = sorted(vlan_cfg['hosts'], key=lambda x: x.get('ip'))
+    if hosts := vlan_cfg.get('hosts'):
+      for host in hosts[:]:
+        host['ip'] = vlan[host['ip']]
+        for extra in host.get('extra', []):
+          extra_host = host.copy()
+          extra_host['hostname'] = '{0}-{1}'.format(host["hostname"], extra["name"])
+          extra_host['hardware'] = extra['hardware']
+          extra_host['ip'] = vlan[extra['ip']]
+          extra_host['aliases'] = ['{0}-{1}'.format(a, extra['name']) for a in host['aliases']]
+          hosts.append(extra_host)
+      vlan_cfg['hosts'] = sorted(hosts, key=lambda x: x.get('ip'))
 
   cfg.update({
     'home': pathlib.Path.home(),

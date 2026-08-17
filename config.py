@@ -78,7 +78,14 @@ HOST_SCHEMA = {
       'port': int,
     },
   ],
-  schema.Optional('description'): str
+  schema.Optional('description'): str,
+  schema.Optional('extra'): [
+    {
+      'name': str,
+      'hardware': HardwareAddress(),
+      'ip': IPAddress(),
+    },
+  ], 
 }
 
 
@@ -132,13 +139,14 @@ def validate(cfg: Any) -> Any:
   def validate_host_list(hosts: list[Any], path_prefix: str) -> None:
     local_ips = set()
     for i, host in enumerate(hosts):
-      if hostname := host.get('hostname'):
+      hostname = host.get('hostname')
+      if hostname:
         if hostname in global_hostnames:
           errors.append(f'{path_prefix}[{i:d}].hostname {hostname!r} already used')
         else:
           global_hostnames.add(hostname)
       if aliases := host.get('aliases'):
-        for j, alias in enumerate(host['aliases']):
+        for j, alias in enumerate(aliases):
           if alias in global_hostnames:
             errors.append(f'{path_prefix}[{i:d}].aliases[{j:d}] {alias!r} already used')
           else:
@@ -159,6 +167,33 @@ def validate(cfg: Any) -> Any:
           local_ips.add(ip)
       if 'description' not in host:
         host['description'] = None
+      if extra := host.get('extra'):
+        local_names = set()
+        for j, mac in enumerate(extra):
+          if name := mac.get('name'):
+            if name in local_names:
+              errors.append(f'{path_prefix}[{i:d}].extra[{j:d}] {name!r} already used in this host segment')
+            else:
+              local_names.add(name)
+
+            extra_hostname = f'{hostname}-{name}'
+            if extra_hostname in global_hostnames:
+              errors.append(f'{path_prefix}[{i:d}].extra[{j:d}] {extra_hostname!r} already used')
+            else:
+              global_hostnames.add(extra_hostname)
+
+
+          if hardware := mac.get('hardware'):
+            if hardware in global_hardwares:
+              errors.append(f'{path_prefix}[{i:d}].extra[{j:d}].hardware {hardware!r} already used')
+            else:
+              global_hardwares.add(hardware)
+          if ip := mac.get('ip'):
+            if ip in local_ips:
+              errors.append(f'{path_prefix}[{i:d}].extra[{j:d}].ip {ip!r} already used in this network segment')
+            else:
+              local_ips.add(ip)
+
 
   validate_host_list(cfg.get('hosts', []), 'hosts')
 
